@@ -15,6 +15,7 @@ import {
   CheckCircle,
   AlertCircle
 } from "lucide-react";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 export const FinancingCalculator: React.FC = () => {
   const [vehiclePrice, setVehiclePrice] = useState(80000);
@@ -36,13 +37,6 @@ export const FinancingCalculator: React.FC = () => {
   };
 
   const result = calculateFinancing();
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   return (
     <section className="py-16 bg-white">
@@ -76,7 +70,7 @@ export const FinancingCalculator: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <Label htmlFor="vehicle-price">Valor do Veículo</Label>
                     <span className="text-sm font-semibold text-blue-600">
-                      {formatCurrency(vehiclePrice)}
+                      {formatPrice(vehiclePrice)}
                     </span>
                   </div>
                   <Slider
@@ -94,7 +88,7 @@ export const FinancingCalculator: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <Label htmlFor="down-payment">Entrada</Label>
                     <span className="text-sm font-semibold text-green-600">
-                      {formatCurrency(downPayment)} ({((downPayment/vehiclePrice)*100).toFixed(0)}%)
+                      {formatPrice(downPayment)} ({((downPayment/vehiclePrice)*100).toFixed(0)}%)
                     </span>
                   </div>
                   <Slider
@@ -160,7 +154,7 @@ export const FinancingCalculator: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-600">Parcela Mensal</p>
                       <p className="text-3xl font-bold text-blue-600">
-                        {formatCurrency(result.monthlyPayment)}
+                        {formatPrice(result.monthlyPayment)}
                       </p>
                     </div>
                     <Calendar className="h-8 w-8 text-blue-500" />
@@ -173,7 +167,7 @@ export const FinancingCalculator: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-600">Valor Total</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(result.totalAmount)}
+                        {formatPrice(result.totalAmount)}
                       </p>
                     </div>
                     <CheckCircle className="h-8 w-8 text-green-500" />
@@ -186,7 +180,7 @@ export const FinancingCalculator: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-600">Total de Juros</p>
                       <p className="text-xl font-bold text-orange-600">
-                        {formatCurrency(result.totalInterest)}
+                        {formatPrice(result.totalInterest)}
                       </p>
                     </div>
                     <Percent className="h-8 w-8 text-orange-500" />
@@ -199,7 +193,7 @@ export const FinancingCalculator: React.FC = () => {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span>Valor financiado:</span>
-                      <span>{formatCurrency(vehiclePrice - downPayment)}</span>
+                      <span>{formatPrice(vehiclePrice - downPayment)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Prazo:</span>

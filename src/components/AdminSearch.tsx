@@ -22,6 +22,7 @@ import {
   Fuel
 } from "lucide-react";
 import { Car } from "@/data/cars";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 interface AdminSearchFilters {
   search: string;
@@ -203,14 +204,6 @@ const AdminSearch = ({ cars, onFiltersChange }: AdminSearchProps) => {
       sortBy: "name",
       sortOrder: "asc"
     });
-  };
-
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0
-    }).format(value);
   };
 
   return (

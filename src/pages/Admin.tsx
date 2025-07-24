@@ -31,6 +31,7 @@ import BulkActions from "@/components/BulkActions";
 import CarRegistration from "@/components/CarRegistration";
 import CategoryManagement from "@/components/CategoryManagement";
 import MinimalAdmin from "@/components/MinimalAdmin";
+import { formatPrice, formatNumber } from "@/lib/mozambique-utils";
 
 // Admin Dashboard Component
 const AdminDashboard = () => {
@@ -44,13 +45,6 @@ const AdminDashboard = () => {
     averageTicket: 45000,
     lowStockAlert: cars.filter(car => Math.random() > 0.8).length,
     stagnantCars: cars.filter(car => Math.random() > 0.7).length
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
   return (
@@ -68,7 +62,7 @@ const AdminDashboard = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalSales)}</div>
+            <div className="text-2xl font-bold">{formatPrice(metrics.totalSales)}</div>
             <div className="flex items-center text-xs text-green-600">
               <TrendingUp className="h-3 w-3 mr-1" />
               +{metrics.monthlyGrowth}% vs mês anterior
@@ -109,7 +103,7 @@ const AdminDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.averageTicket)}</div>
+            <div className="text-2xl font-bold">{formatPrice(metrics.averageTicket)}</div>
             <p className="text-xs text-muted-foreground">
               {metrics.averageDaysToSell} dias média de venda
             </p>
@@ -388,13 +382,6 @@ const AdminSearch: React.FC<AdminSearchProps> = ({
     setSelectedCars([]);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -491,9 +478,9 @@ const AdminSearch: React.FC<AdminSearchProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as faixas</SelectItem>
-                  <SelectItem value="0-50000">Até R$ 50.000</SelectItem>
-                  <SelectItem value="50000-100000">R$ 50.000 - R$ 100.000</SelectItem>
-                  <SelectItem value="100000+">Acima de R$ 100.000</SelectItem>
+                  <SelectItem value="0-50000">Até 50.000 MZN</SelectItem>
+                  <SelectItem value="50000-100000">50.000 - 100.000 MZN</SelectItem>
+                  <SelectItem value="100000+">Acima de 100.000 MZN</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -629,9 +616,9 @@ const AdminSearch: React.FC<AdminSearchProps> = ({
                             <div className="text-sm text-gray-500">{car.color || 'N/A'} • {car.fuel} • {car.transmission || 'N/A'}</div>
                           </div>
                         </td>
-                        <td className="p-3 font-medium">{formatCurrency(car.price)}</td>
+                        <td className="p-3 font-medium">{formatPrice(car.price)}</td>
                         <td className="p-3">{car.year}</td>
-                        <td className="p-3">{car.mileage.toLocaleString('pt-BR')} km</td>
+                        <td className="p-3">{formatNumber(car.mileage)} km</td>
                         <td className="p-3">
                           <Badge variant={Math.random() > 0.3 ? "default" : "secondary"}>
                             {Math.random() > 0.3 ? "Disponível" : "Vendido"}

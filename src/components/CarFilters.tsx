@@ -121,7 +121,7 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
             <label className="text-sm font-medium mb-2 block">Preço Mínimo</label>
             <Input
               type="number"
-              placeholder="R$ 0"
+              placeholder="0 MZN"
               value={filters.priceRange[0] || ""}
               onChange={(e) => updateFilters({ 
                 priceRange: [parseInt(e.target.value) || 0, filters.priceRange[1]]
@@ -133,7 +133,7 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
             <label className="text-sm font-medium mb-2 block">Preço Máximo</label>
             <Input
               type="number"
-              placeholder="R$ 500.000"
+              placeholder="500.000 MZN"
               value={filters.priceRange[1] === 500000 ? "" : filters.priceRange[1]}
               onChange={(e) => updateFilters({ 
                 priceRange: [filters.priceRange[0], parseInt(e.target.value) || 500000]

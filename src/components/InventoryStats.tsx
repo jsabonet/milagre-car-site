@@ -13,6 +13,7 @@ import {
   Palette
 } from "lucide-react";
 import { Car } from "@/data/cars";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 interface InventoryStatsProps {
   cars: Car[];
@@ -40,10 +41,10 @@ const InventoryStats = ({ cars }: InventoryStatsProps) => {
 
     // Price ranges
     const priceRanges = {
-      "Até R$ 50k": cars.filter(car => car.price <= 50000).length,
-      "R$ 50k - R$ 100k": cars.filter(car => car.price > 50000 && car.price <= 100000).length,
-      "R$ 100k - R$ 200k": cars.filter(car => car.price > 100000 && car.price <= 200000).length,
-      "Acima de R$ 200k": cars.filter(car => car.price > 200000).length,
+      "Até 50k MZN": cars.filter(car => car.price <= 50000).length,
+      "50k - 100k MZN": cars.filter(car => car.price > 50000 && car.price <= 100000).length,
+      "100k - 200k MZN": cars.filter(car => car.price > 100000 && car.price <= 200000).length,
+      "Acima de 200k MZN": cars.filter(car => car.price > 200000).length,
     };
 
     // Year distribution
@@ -71,14 +72,6 @@ const InventoryStats = ({ cars }: InventoryStatsProps) => {
       featuredCars: cars.filter(car => car.featured).length
     };
   }, [cars]);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0
-    }).format(price);
-  };
 
   const formatMileage = (mileage: number) => {
     return `${(mileage / 1000).toFixed(0)}k km`;

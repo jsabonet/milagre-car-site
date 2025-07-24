@@ -36,7 +36,7 @@ export const MinimalAdmin: React.FC<MinimalAdminProps> = ({ onNavigateToSection 
     },
     {
       title: 'Vendas do Mês',
-      value: 'R$ 2.4M',
+      value: '2.4M MZN',
       change: '+12%',
       icon: <DollarSign className="h-5 w-5" />,
       color: 'text-green-600'
@@ -126,7 +126,7 @@ export const MinimalAdmin: React.FC<MinimalAdminProps> = ({ onNavigateToSection 
                     <TrendingUp className="h-4 w-4 text-green-200" />
                     <span className="text-xs text-green-200">Vendas</span>
                   </div>
-                  <p className="text-xl font-bold mt-1">R$ 2.4M</p>
+                  <p className="text-xl font-bold mt-1">2.4M MZN</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
                   <div className="flex items-center gap-2">
@@ -330,7 +330,7 @@ export const MinimalAdmin: React.FC<MinimalAdminProps> = ({ onNavigateToSection 
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <div>
                   <p className="text-sm text-gray-600">Vendas</p>
-                  <p className="text-xl font-bold text-green-600">R$ 180K</p>
+                  <p className="text-xl font-bold text-green-600">180K MZN</p>
                 </div>
                 <TrendingUp className="h-6 w-6 text-green-500" />
               </div>

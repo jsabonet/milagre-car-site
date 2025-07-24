@@ -24,6 +24,7 @@ import {
   Target,
   Eye
 } from "lucide-react";
+import { formatPrice, formatDate } from "@/lib/mozambique-utils";
 
 interface QuickAction {
   id: string;
@@ -41,6 +42,11 @@ interface AdminOverviewProps {
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({ onNavigateToSection }) => {
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Método para forçar formatação em MZN
+  const forceMZNFormat = (value: number): string => {
+    return formatPrice(value);
+  };
 
   // Quick actions with better UX
   const quickActions: QuickAction[] = [
@@ -99,7 +105,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ onNavigateToSectio
     },
     {
       title: 'Vendas do Mês',
-      value: 'R$ 2.4M',
+      value: formatPrice(2400000), // Força exibição em MZN
       change: '+12%',
       trend: 'up',
       description: 'Faturamento mensal atual'
@@ -146,7 +152,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ onNavigateToSectio
           </div>
           <div className="text-right">
             <p className="text-blue-100">Hoje</p>
-            <p className="text-2xl font-bold">{new Date().toLocaleDateString('pt-BR')}</p>
+            <p className="text-2xl font-bold">{formatDate(new Date())}</p>
           </div>
         </div>
       </div>

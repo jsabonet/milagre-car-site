@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatPrice } from "@/lib/mozambique-utils";
 import { 
   ChevronRight, 
   Grid3x3, 
@@ -137,13 +138,6 @@ const Cars = () => {
         ? prev.filter(id => id !== carId)
         : [...prev, carId].slice(-4) // Máximo 4 carros
     );
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
   };
 
   const formatMileage = (mileage: number) => {

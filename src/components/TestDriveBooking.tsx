@@ -164,7 +164,7 @@ export const TestDriveBooking: React.FC = () => {
                             id="phone"
                             value={formData.phone}
                             onChange={(e) => handleInputChange('phone', e.target.value)}
-                            placeholder="(11) 99999-9999"
+                            placeholder="+258 84 999-9999"
                             required
                           />
                         </div>
@@ -347,7 +347,7 @@ export const TestDriveBooking: React.FC = () => {
                     <div className="space-y-3">
                       <Button variant="outline" className="w-full justify-start">
                         <Phone className="h-4 w-4 mr-2" />
-                        (11) 3000-1234
+                        +258 21 300-1234
                       </Button>
                       <Button variant="outline" className="w-full justify-start">
                         <Mail className="h-4 w-4 mr-2" />

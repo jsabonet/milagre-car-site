@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Car } from "@/data/cars";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 interface AdminCarTableProps {
   cars: Car[];
@@ -41,14 +42,6 @@ const AdminCarTable = ({
 }: AdminCarTableProps) => {
   const [selectedCars, setSelectedCars] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0
-    }).format(price);
-  };
 
   const formatMileage = (mileage: number) => {
     return `${(mileage / 1000).toFixed(0)}k km`;

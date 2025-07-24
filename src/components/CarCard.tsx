@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Fuel, Gauge, MapPin } from "lucide-react";
+import { formatPrice, formatNumber } from "@/lib/mozambique-utils";
 
 interface Car {
   id: string;
@@ -24,13 +25,6 @@ interface CarCardProps {
 }
 
 const CarCard = ({ car, onViewDetails, viewMode = 'grid' }: CarCardProps) => {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
-  };
-
   const formatMileage = (mileage: number) => {
     return `${(mileage / 1000).toFixed(0)}k km`;
   };
@@ -85,8 +79,9 @@ const CarCard = ({ car, onViewDetails, viewMode = 'grid' }: CarCardProps) => {
 
           <div className={`flex items-center justify-between pt-4 border-t border-border ${viewMode === 'list' ? 'mt-auto' : ''}`}>
             <div>
-              <p className="text-2xl font-bold text-primary">
-                {formatPrice(car.price)}
+                              <p className="text-2xl font-bold text-primary">{formatPrice(car.price)}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                *Parcelamento disponível
               </p>
             </div>
             <Button 

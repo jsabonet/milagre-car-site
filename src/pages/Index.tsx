@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import CarCard from "@/components/CarCard";
@@ -8,7 +9,8 @@ import { cars, Car } from "@/data/cars";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Fuel, Gauge, MapPin, Palette, Settings2 } from "lucide-react";
+import { Calendar, Fuel, Gauge, MapPin, Palette, Settings2, Phone } from "lucide-react";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 const Index = () => {
   const [filters, setFilters] = useState<FilterState>({
@@ -43,13 +45,6 @@ const Index = () => {
   const handleViewDetails = (car: Car) => {
     setSelectedCar(car);
     setShowDialog(true);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
   };
 
   const formatMileage = (mileage: number) => {
@@ -227,6 +222,29 @@ const Index = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Subtle Financing CTA - Background section */}
+      <section className="py-6 bg-gray-50/30 border-t border-gray-100">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex-1 text-left">
+                <p className="text-gray-600 text-sm">
+                  💬 <strong>Parcelamento disponível</strong> - Consulte condições e facilitamos para você
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Link to="/contact">
+                  <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
+                    <Phone className="h-4 w-4 mr-2" />
+                    Consultar
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>

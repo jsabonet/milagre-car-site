@@ -25,6 +25,7 @@ import {
   Info
 } from "lucide-react";
 import { cars } from "@/data/cars";
+import { formatPrice, formatNumber } from "@/lib/mozambique-utils";
 
 interface CarFormData {
   name: string;
@@ -73,7 +74,7 @@ export const CarRegistration: React.FC<CarRegistrationProps> = ({ onCarCreated }
   const categories = ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Pickup', 'Van', 'Conversível', 'Crossover'];
   const fuelTypes = ['Gasolina', 'Etanol', 'Flex', 'Diesel', 'Híbrido', 'Elétrico'];
   const transmissionTypes = ['Manual', 'Automático', 'CVT', 'Semi-automático'];
-  const locations = ['São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Salvador, BA', 'Fortaleza, CE', 'Brasília, DF'];
+  const locations = ['Maputo', 'Matola', 'Beira', 'Nampula', 'Chimoio', 'Nacala', 'Quelimane', 'Tete', 'Xai-Xai', 'Lichinga'];
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -122,13 +123,6 @@ export const CarRegistration: React.FC<CarRegistrationProps> = ({ onCarCreated }
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
   const steps = [
@@ -226,7 +220,7 @@ export const CarRegistration: React.FC<CarRegistrationProps> = ({ onCarCreated }
                   />
                 </div>
                 {formData.price > 0 && (
-                  <p className="text-sm text-gray-600">{formatCurrency(formData.price)}</p>
+                  <p className="text-sm text-gray-600">{formatPrice(formData.price)}</p>
                 )}
                 {errors.price && (
                   <p className="text-sm text-red-600 flex items-center gap-1">
@@ -291,7 +285,7 @@ export const CarRegistration: React.FC<CarRegistrationProps> = ({ onCarCreated }
                   />
                 </div>
                 {formData.mileage > 0 && (
-                  <p className="text-sm text-gray-600">{formData.mileage.toLocaleString('pt-BR')} km</p>
+                  <p className="text-sm text-gray-600">{formatNumber(formData.mileage)} km</p>
                 )}
                 {errors.mileage && (
                   <p className="text-sm text-red-600 flex items-center gap-1">
@@ -393,7 +387,7 @@ export const CarRegistration: React.FC<CarRegistrationProps> = ({ onCarCreated }
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Preço</p>
-                  <p className="font-semibold text-green-600">{formatCurrency(formData.price)}</p>
+                  <p className="font-semibold text-green-600">{formatPrice(formData.price)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Localização</p>

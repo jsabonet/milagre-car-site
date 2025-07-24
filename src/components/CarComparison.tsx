@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { GitCompare, X, Calendar, Fuel, Gauge, MapPin, Palette, Settings2 } from "lucide-react";
 import { Car } from "@/data/cars";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 interface CarComparisonProps {
   selectedCarIds: string[];
@@ -18,13 +19,6 @@ const CarComparison = ({ selectedCarIds, cars, onRemoveCar, onClearAll }: CarCom
   const [showComparisonModal, setShowComparisonModal] = useState(false);
 
   const selectedCars = cars.filter(car => selectedCarIds.includes(car.id));
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
-  };
 
   const formatMileage = (mileage: number) => {
     return `${(mileage / 1000).toFixed(0)}k km`;

@@ -79,23 +79,24 @@ export const Footer = () => {
                 <MapPin className="h-5 w-5 mt-0.5 text-accent" />
                 <div>
                   <p className="text-primary-foreground/80">
-                    Rua dos Automóveis, 123<br />
-                    1000-001 Lisboa, Portugal
+                    Av 24 de julho n°329<br />
+                    próximo ao 4° cartório-/USTM<br />
+                    Maputo, Moçambique
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-accent" />
-                <a href="tel:+351912345678" className="text-primary-foreground/80 hover:text-accent transition-colors">
-                  +351 912 345 678
+                <a href="tel:+258840119527" className="text-primary-foreground/80 hover:text-accent transition-colors">
+                  +258 84 011 9527
                 </a>
               </div>
               
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-accent" />
-                <a href="mailto:info@milagrecar.pt" className="text-primary-foreground/80 hover:text-accent transition-colors">
-                  info@milagrecar.pt
+                <a href="mailto:info@milagrecar.mz" className="text-primary-foreground/80 hover:text-accent transition-colors">
+                  info@milagrecar.mz
                 </a>
               </div>
               

@@ -18,6 +18,7 @@ import {
   Activity
 } from "lucide-react";
 import { Car } from "@/data/cars";
+import { formatPrice, formatDate } from "@/lib/mozambique-utils";
 
 interface AdminDashboardProps {
   cars: Car[];
@@ -106,14 +107,6 @@ const AdminDashboard = ({ cars }: AdminDashboardProps) => {
     };
   }, [cars]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0
-    }).format(value);
-  };
-
   const getGrowthIcon = (current: number, previous: number) => {
     const growth = current > previous;
     return growth ? (
@@ -137,7 +130,7 @@ const AdminDashboard = ({ cars }: AdminDashboardProps) => {
         </div>
         <Badge variant="outline" className="gap-2">
           <Activity className="h-4 w-4" />
-          Última atualização: {new Date().toLocaleDateString('pt-BR')}
+          Última atualização: {formatDate(new Date())}
         </Badge>
       </div>
 
@@ -170,7 +163,7 @@ const AdminDashboard = ({ cars }: AdminDashboardProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Receita Total</p>
-                <p className="text-2xl font-bold">{formatCurrency(businessMetrics.sales.totalRevenue)}</p>
+                <p className="text-2xl font-bold">{formatPrice(businessMetrics.sales.totalRevenue)}</p>
                 <div className="flex items-center gap-1 mt-1">
                   {getGrowthIcon(businessMetrics.sales.totalRevenue, businessMetrics.sales.lastMonthRevenue)}
                   <span className="text-sm text-muted-foreground">
@@ -327,7 +320,7 @@ const AdminDashboard = ({ cars }: AdminDashboardProps) => {
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-2xl font-bold text-accent mb-1">
-              {formatCurrency(businessMetrics.inventory.avgPrice)}
+              {formatPrice(businessMetrics.inventory.avgPrice)}
             </div>
             <p className="text-sm text-muted-foreground">Preço Médio</p>
           </CardContent>

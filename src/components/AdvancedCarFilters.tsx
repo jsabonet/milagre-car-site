@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, X, Filter } from "lucide-react";
 import { categories } from "@/data/cars";
 import { ExtendedFilterState } from "@/pages/Cars";
+import { formatPrice } from "@/lib/mozambique-utils";
 
 interface AdvancedCarFiltersProps {
   filters: ExtendedFilterState;
@@ -23,20 +24,12 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
   const brands = ["Todos", "Honda", "Toyota", "Volkswagen", "Hyundai", "Jeep", "Chevrolet", "Ford", "Fiat", "BMW", "Mercedes", "Audi"];
   const transmissions = ["", "Manual", "Automática", "CVT", "Semi-automática"];
   const colors = ["", "Branco", "Preto", "Prata", "Cinza", "Azul", "Vermelho", "Verde", "Amarelo", "Marrom"];
-  const fuelTypes = ["", "Flex", "Gasolina", "Álcool", "Diesel", "Híbrido", "Elétrico"];
-  const locations = ["", "São Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Brasília, DF", "Salvador, BA"];
+  const fuelTypes = ["", "Gasolina", "Diesel"];
+  const locations = ["", "Maputo", "Matola", "Beira", "Nampula", "Chimoio", "Nacala", "Quelimane", "Tete", "Xai-Xai", "Lichinga"];
 
   const updateFilters = (newFilters: Partial<ExtendedFilterState>) => {
     const updatedFilters = { ...filters, ...newFilters };
     onFiltersChange(updatedFilters);
-  };
-
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0
-    }).format(value);
   };
 
   const formatMileage = (value: number) => {

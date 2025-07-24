@@ -23,8 +23,8 @@ export const cars: Car[] = [
     year: 2023,
     price: 185000,
     mileage: 15000,
-    fuel: "Flex",
-    location: "São Paulo, SP",
+    fuel: "Gasolina",
+    location: "Maputo",
     images: [
       "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80"
@@ -42,8 +42,8 @@ export const cars: Car[] = [
     year: 2022,
     price: 165000,
     mileage: 25000,
-    fuel: "Flex",
-    location: "Rio de Janeiro, RJ",
+    fuel: "Diesel",
+    location: "Matola",
     images: [
       "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=800&q=80"
     ],
@@ -60,7 +60,7 @@ export const cars: Car[] = [
     price: 195000,
     mileage: 35000,
     fuel: "Gasolina",
-    location: "Belo Horizonte, MG",
+    location: "Beira",
     images: [
       "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80"
     ],
@@ -77,8 +77,8 @@ export const cars: Car[] = [
     year: 2023,
     price: 95000,
     mileage: 8000,
-    fuel: "Flex",
-    location: "Brasília, DF",
+    fuel: "Gasolina",
+    location: "Nampula",
     images: [
       "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80"
     ],
@@ -94,8 +94,8 @@ export const cars: Car[] = [
     year: 2022,
     price: 175000,
     mileage: 22000,
-    fuel: "Flex",
-    location: "Curitiba, PR",
+    fuel: "Diesel",
+    location: "Chimoio",
     images: [
       "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80"
     ],
@@ -111,8 +111,8 @@ export const cars: Car[] = [
     year: 2023,
     price: 89000,
     mileage: 12000,
-    fuel: "Flex",
-    location: "Porto Alegre, RS",
+    fuel: "Gasolina",
+    location: "Nacala",
     images: [
       "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80"
     ],

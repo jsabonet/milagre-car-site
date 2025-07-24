@@ -42,8 +42,8 @@ const Contact = () => {
     {
       icon: Phone,
       title: "Telefone",
-      primary: "(11) 3000-1234",
-      secondary: "(11) 9 9999-8888",
+      primary: "+258 21 300-1234",
+      secondary: "+258 84 999-8888",
       description: "Atendimento: Seg-Sex 8h às 18h, Sáb 8h às 14h"
     },
     {
@@ -56,7 +56,7 @@ const Contact = () => {
     {
       icon: MessageCircle,
       title: "WhatsApp",
-      primary: "(11) 9 9999-8888",
+      primary: "+258 84 999-8888",
       secondary: "Chat Online 24/7",
       description: "Resposta imediata durante horário comercial"
     }
@@ -64,18 +64,18 @@ const Contact = () => {
 
   const locations = [
     {
-      name: "Loja Centro",
-      address: "Av. Paulista, 1500 - Bela Vista",
-      city: "São Paulo, SP - CEP: 01310-100",
-      phone: "(11) 3000-1234",
+      name: "Loja Maputo",
+      address: "Av. Julius Nyerere, 1500 - Polana",
+      city: "Maputo, Moçambique",
+      phone: "+258 21 300-1234",
       hours: "Seg-Sex: 8h às 18h | Sáb: 8h às 14h",
       services: ["Vendas", "Financiamento", "Test Drive"]
     },
     {
-      name: "Loja Zona Sul",
-      address: "Av. Ibirapuera, 2000 - Moema",
-      city: "São Paulo, SP - CEP: 04029-200",
-      phone: "(11) 3000-5678",
+      name: "Loja Matola",
+      address: "Av. de Moçambique, 2000 - Matola",
+      city: "Matola, Moçambique",
+      phone: "+258 21 300-5678",
       hours: "Seg-Sex: 8h às 18h | Sáb: 8h às 14h",
       services: ["Vendas", "Vistoria", "Documentação"]
     }
@@ -268,7 +268,7 @@ const Contact = () => {
                               id="phone"
                               value={formData.phone}
                               onChange={(e) => handleInputChange('phone', e.target.value)}
-                              placeholder="(11) 99999-9999"
+                              placeholder="+258 84 999-9999"
                               required
                             />
                           </div>
@@ -356,11 +356,11 @@ const Contact = () => {
                     <CardContent className="space-y-3">
                       <Button variant="outline" className="w-full justify-start text-green-600 border-green-200 hover:bg-green-50">
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        WhatsApp: (11) 9 9999-8888
+                        WhatsApp: +258 84 999-8888
                       </Button>
                       <Button variant="outline" className="w-full justify-start text-blue-600 border-blue-200 hover:bg-blue-50">
                         <Phone className="h-4 w-4 mr-2" />
-                        Telefone: (11) 3000-1234
+                        Telefone: +258 21 300-1234
                       </Button>
                       <Button variant="outline" className="w-full justify-start text-purple-600 border-purple-200 hover:bg-purple-50">
                         <Mail className="h-4 w-4 mr-2" />
