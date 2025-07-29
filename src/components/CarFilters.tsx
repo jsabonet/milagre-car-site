@@ -22,8 +22,8 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: "Todos",
-    priceRange: [0, 500000],
-    yearRange: [2015, 2024],
+    priceRange: [0, 50000000],
+    yearRange: [1980, 2025],
     brand: ""
   });
 
@@ -41,8 +41,8 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
     const defaultFilters: FilterState = {
       search: "",
       category: "Todos",
-      priceRange: [0, 500000],
-      yearRange: [2015, 2024],
+      priceRange: [0, 50000000],
+      yearRange: [1980, 2025],
       brand: ""
     };
     setFilters(defaultFilters);
@@ -133,10 +133,10 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
             <label className="text-sm font-medium mb-2 block">Preço Máximo</label>
             <Input
               type="number"
-              placeholder="500.000 MZN"
-              value={filters.priceRange[1] === 500000 ? "" : filters.priceRange[1]}
+              placeholder="50.000.000 MZN"
+              value={filters.priceRange[1] === 50000000 ? "" : filters.priceRange[1]}
               onChange={(e) => updateFilters({ 
-                priceRange: [filters.priceRange[0], parseInt(e.target.value) || 500000]
+                priceRange: [filters.priceRange[0], parseInt(e.target.value) || 50000000]
               })}
             />
           </div>
@@ -145,10 +145,10 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
             <label className="text-sm font-medium mb-2 block">Ano Mínimo</label>
             <Input
               type="number"
-              placeholder="2015"
+              placeholder="1980"
               value={filters.yearRange[0] || ""}
               onChange={(e) => updateFilters({ 
-                yearRange: [parseInt(e.target.value) || 2015, filters.yearRange[1]]
+                yearRange: [parseInt(e.target.value) || 1980, filters.yearRange[1]]
               })}
             />
           </div>
@@ -157,10 +157,10 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
             <label className="text-sm font-medium mb-2 block">Ano Máximo</label>
             <Input
               type="number"
-              placeholder="2024"
-              value={filters.yearRange[1] === 2024 ? "" : filters.yearRange[1]}
+              placeholder="2025"
+              value={filters.yearRange[1] === 2025 ? "" : filters.yearRange[1]}
               onChange={(e) => updateFilters({ 
-                yearRange: [filters.yearRange[0], parseInt(e.target.value) || 2024]
+                yearRange: [filters.yearRange[0], parseInt(e.target.value) || 2025]
               })}
             />
           </div>

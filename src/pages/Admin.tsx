@@ -1,767 +1,683 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  BarChart3, 
-  Car, 
-  TrendingUp, 
-  TrendingDown, 
-  Users, 
-  DollarSign, 
-  AlertTriangle,
-  Search,
-  Filter,
-  X,
-  Eye,
-  Edit,
-  Trash2,
-  Star,
-  Download,
-  Upload,
-  Settings
-} from "lucide-react";
-import { cars } from "@/data/cars";
-import ImageUpload from "@/components/ImageUpload";
-import BulkActions from "@/components/BulkActions";
-import CarRegistration from "@/components/CarRegistration";
-import CategoryManagement from "@/components/CategoryManagement";
-import MinimalAdmin from "@/components/MinimalAdmin";
-import { formatPrice, formatNumber } from "@/lib/mozambique-utils";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Edit, Trash2, Car as CarIcon, Tags, ArrowLeft, Eye, Loader2, Images } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { formatPrice } from "@/lib/mozambique-utils";
+import { useCars, useCategories, useCreateCar, useUpdateCar, useDeleteCar } from "@/hooks/useApi";
+import { Car } from "@/services/api";
+import CarImageUpload from "@/components/CarImageUpload";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Admin Dashboard Component
-const AdminDashboard = () => {
-  // Simulate business metrics
-  const metrics = {
-    totalSales: 2450000,
-    monthlyGrowth: 12.5,
-    carsInStock: cars.length,
-    averageDaysToSell: 18,
-    conversionRate: 8.3,
-    averageTicket: 45000,
-    lowStockAlert: cars.filter(car => Math.random() > 0.8).length,
-    stagnantCars: cars.filter(car => Math.random() > 0.7).length
+const Admin = () => {
+  const [activeTab, setActiveTab] = useState<"cars" | "categories">("cars");
+  const [isAddingCar, setIsAddingCar] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCar, setEditingCar] = useState<Car | null>(null);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [selectedCarForImages, setSelectedCarForImages] = useState<number | null>(null);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // API Hooks
+  const { data: cars, loading: carsLoading, error: carsError, refetch: refetchCars } = useCars();
+  const { data: categories, loading: categoriesLoading, error: categoriesError } = useCategories();
+  const createCarMutation = useCreateCar();
+  const updateCarMutation = useUpdateCar();
+  const deleteCarMutation = useDeleteCar();
+
+  const [newCar, setNewCar] = useState({
+    model: "",
+    make: "",
+    year: "",
+    price: "",
+    mileage: "",
+    fuel_type: "gasolina",
+    location: "Maputo",
+    category: "",
+    description: "",
+    transmission: "manual",
+    color: "",
+    is_available: true,
+    featured: false
+  });
+
+  const [newCategory, setNewCategory] = useState("");
+
+  const handleAddCar = async () => {
+    if (!newCar.model || !newCar.make || !newCar.price) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate numeric fields
+    if (isNaN(Number(newCar.price)) || Number(newCar.price) <= 0) {
+      toast({
+        title: "Erro",
+        description: "Preço deve ser um número válido maior que zero",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newCar.year && (isNaN(Number(newCar.year)) || Number(newCar.year) < 1900 || Number(newCar.year) > new Date().getFullYear() + 1)) {
+      toast({
+        title: "Erro",
+        description: "Ano deve ser válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newCar.mileage && isNaN(Number(newCar.mileage))) {
+      toast({
+        title: "Erro",
+        description: "Quilometragem deve ser um número válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Clean the data before sending
+      const cleanCarData = {
+        ...newCar,
+        price: Number(newCar.price),
+        year: newCar.year ? Number(newCar.year) : undefined,
+        mileage: newCar.mileage ? Number(newCar.mileage) : undefined,
+        category: newCar.category ? Number(newCar.category) : undefined,
+      };
+
+      await createCarMutation.mutateAsync(cleanCarData);
+      toast({
+        title: "Sucesso",
+        description: "Carro adicionado com sucesso!",
+      });
+
+      resetForm();
+      setIsAddingCar(false);
+      refetchCars();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar carro",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateCar = async () => {
+    if (!editingCar || !newCar.model || !newCar.make || !newCar.price) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await updateCarMutation.mutateAsync({ id: editingCar.id, data: newCar });
+      toast({
+        title: "Sucesso",
+        description: "Carro atualizado com sucesso!",
+      });
+
+      resetForm();
+      setEditingCar(null);
+      setIsAddingCar(false);
+      refetchCars();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar carro",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteCar = async (carId: number) => {
+    if (confirm("Tem certeza que deseja excluir este carro?")) {
+      try {
+        await deleteCarMutation.mutateAsync(carId);
+        toast({
+          title: "Sucesso",
+          description: "Carro excluído com sucesso!",
+        });
+        refetchCars();
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir carro",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setNewCar({
+      model: "",
+      make: "",
+      year: "",
+      price: "",
+      mileage: "",
+      fuel_type: "gasolina",
+      location: "Maputo",
+      category: "",
+      description: "",
+      transmission: "manual",
+      color: "",
+      is_available: true,
+      featured: false
+    });
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) {
+      toast({
+        title: "Erro",
+        description: "Digite o nome da categoria",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Sucesso",
+      description: "Categoria adicionada com sucesso!",
+    });
+
+    setNewCategory("");
+    setIsAddingCategory(false);
+  };
+
+  const handleEditCar = (car: Car) => {
+    setEditingCar(car);
+    setNewCar({
+      model: car.model,
+      make: car.make,
+      year: car.year.toString(),
+      price: car.price.toString(),
+      mileage: car.mileage ? car.mileage.toString() : "",
+      fuel_type: car.fuel_type,
+      location: car.location || "Maputo",
+      category: car.category.id.toString(),
+      description: car.description || "",
+      transmission: car.transmission || "manual",
+      color: car.color || "",
+      is_available: car.is_available,
+      featured: car.featured
+    });
+    setIsAddingCar(true);
+  };
+
+  const handleManageImages = (carId: number) => {
+    setSelectedCarForImages(carId);
+    setShowImageUpload(true);
+  };
+
+  const handleImagesUpdated = () => {
+    refetchCars();
+    toast({
+      title: "Sucesso",
+      description: "Imagens atualizadas com sucesso!",
+    });
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-        <p className="text-gray-600">Visão geral do desempenho e métricas do negócio</p>
-      </div>
-
-      {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Mensais</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(metrics.totalSales)}</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +{metrics.monthlyGrowth}% vs mês anterior
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Carros em Estoque</CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.carsInStock}</div>
-            <p className="text-xs text-muted-foreground">
-              {cars.filter(car => Math.random() > 0.2).length} disponíveis
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.conversionRate}%</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +0.8% vs mês anterior
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(metrics.averageTicket)}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.averageDaysToSell} dias média de venda
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Métricas de Performance</CardTitle>
-            <CardDescription>Indicadores chave de desempenho</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Tempo Médio de Venda</span>
-              <Badge variant="secondary">{metrics.averageDaysToSell} dias</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Visualizações por Carro</span>
-              <Badge variant="secondary">127/mês</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Test Drives Agendados</span>
-              <Badge variant="secondary">34 este mês</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Satisfação do Cliente</span>
-              <Badge variant="secondary">4.8/5.0</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Alertas e Notificações
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {metrics.lowStockAlert > 0 && (
-              <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                <div>
-                  <p className="text-sm font-medium">Estoque Baixo</p>
-                  <p className="text-xs text-gray-600">{metrics.lowStockAlert} modelos com pouco estoque</p>
-                </div>
-              </div>
-            )}
-            
-            {metrics.stagnantCars > 0 && (
-              <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
-                <TrendingDown className="h-4 w-4 text-red-500" />
-                <div>
-                  <p className="text-sm font-medium">Carros Parados</p>
-                  <p className="text-xs text-gray-600">{metrics.stagnantCars} carros há mais de 60 dias</p>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-              <TrendingUp className="h-4 w-4 text-green-500" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-white">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar ao Site
+                </Button>
+              </Link>
               <div>
-                <p className="text-sm font-medium">Meta Atingida</p>
-                <p className="text-xs text-gray-600">Vendas do mês superaram expectativa</p>
+                <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
+                <p className="text-muted-foreground">MILAGRE CAR COMÉRCIO</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-};
-
-// Car Registration Component
-const CarRegistrationPage = () => {
-  const handleCarCreated = (carData: any) => {
-    console.log('Novo carro cadastrado:', carData);
-    // Here you would typically send the data to your backend
-    alert(`Carro ${carData.brand} ${carData.name} cadastrado com sucesso!`);
-  };
-
-  return <CarRegistration onCarCreated={handleCarCreated} />;
-};
-
-// Category Management Component  
-const CategoryManagementPage = () => {
-  const handleCategoryCreated = (category: any) => {
-    console.log('Nova categoria criada:', category);
-  };
-
-  const handleCategoryUpdated = (category: any) => {
-    console.log('Categoria atualizada:', category);
-  };
-
-  const handleCategoryDeleted = (categoryId: string) => {
-    console.log('Categoria excluída:', categoryId);
-  };
-
-  return (
-    <CategoryManagement
-      onCategoryCreated={handleCategoryCreated}
-      onCategoryUpdated={handleCategoryUpdated}
-      onCategoryDeleted={handleCategoryDeleted}
-    />
-  );
-};
-const ImageManagement = () => {
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-
-  const handleFilesUploaded = (files: any[]) => {
-    setUploadedFiles(prev => [...prev, ...files]);
-    console.log('Arquivos enviados:', files);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Gestão de Imagens</h1>
-        <p className="text-gray-600">Sistema profissional de upload e gestão de imagens</p>
+          </div>
+        </div>
       </div>
 
-      <ImageUpload
-        onFilesUploaded={handleFilesUploaded}
-        maxFiles={20}
-        maxSize={10}
-        acceptedTypes={['image/jpeg', 'image/png', 'image/webp', 'image/avif']}
-      />
+      <div className="container mx-auto px-4 py-8">
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-8 max-w-md">
+          <button
+            onClick={() => setActiveTab("cars")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "cars"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <CarIcon className="h-4 w-4" />
+            Carros
+          </button>
+          <button
+            onClick={() => setActiveTab("categories")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "categories"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Tags className="h-4 w-4" />
+            Categorias
+          </button>
+        </div>
 
-      {uploadedFiles.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Galeria de Imagens Enviadas</CardTitle>
-            <CardDescription>
-              {uploadedFiles.length} imagem(ns) carregada(s) com sucesso
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {uploadedFiles.map((file) => (
-                <div key={file.id} className="group relative">
-                  <img
-                    src={file.preview}
-                    alt="Uploaded"
-                    className="w-full h-24 object-cover rounded-lg border"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 flex gap-2">
-                      <Button size="sm" variant="secondary">
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="secondary">
-                        <Download className="h-3 w-3" />
-                      </Button>
+        {/* Cars Tab */}
+        {activeTab === "cars" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Gerenciar Carros</h2>
+              <Dialog open={isAddingCar} onOpenChange={(open) => {
+                setIsAddingCar(open);
+                if (!open) {
+                  setEditingCar(null);
+                  resetForm();
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="premium">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Carro
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCar ? "Editar Carro" : "Adicionar Novo Carro"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="model">Modelo *</Label>
+                      <Input
+                        id="model"
+                        value={newCar.model}
+                        onChange={(e) => setNewCar({ ...newCar, model: e.target.value })}
+                        placeholder="Ex: Civic Touring"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="make">Marca *</Label>
+                      <Input
+                        id="make"
+                        value={newCar.make}
+                        onChange={(e) => setNewCar({ ...newCar, make: e.target.value })}
+                        placeholder="Ex: Honda"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="year">Ano</Label>
+                      <Input
+                        id="year"
+                        type="number"
+                        value={newCar.year || ''}
+                        onChange={(e) => setNewCar({ ...newCar, year: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="price">Preço (MZN) *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        value={newCar.price || ''}
+                        onChange={(e) => setNewCar({ ...newCar, price: e.target.value })}
+                        placeholder="0"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="mileage">Quilometragem</Label>
+                      <Input
+                        id="mileage"
+                        type="number"
+                        value={newCar.mileage || ''}
+                        onChange={(e) => setNewCar({ ...newCar, mileage: e.target.value })}
+                        placeholder="0 km"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="fuel_type">Combustível</Label>
+                      <Select value={newCar.fuel_type} onValueChange={(value) => setNewCar({ ...newCar, fuel_type: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gasolina">Gasolina</SelectItem>
+                          <SelectItem value="diesel">Diesel</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="category">Categoria</Label>
+                      <Select value={newCar.category ? newCar.category.toString() : ''} onValueChange={(value) => setNewCar({ ...newCar, category: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories?.map((category) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="transmission">Transmissão</Label>
+                      <Select value={newCar.transmission} onValueChange={(value) => setNewCar({ ...newCar, transmission: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manual">Manual</SelectItem>
+                          <SelectItem value="automatic">Automática</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="color">Cor</Label>
+                      <Input
+                        id="color"
+                        value={newCar.color}
+                        onChange={(e) => setNewCar({ ...newCar, color: e.target.value })}
+                        placeholder="Ex: Branco Pérola"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="location">Localização</Label>
+                      <Input
+                        id="location"
+                        value={newCar.location}
+                        onChange={(e) => setNewCar({ ...newCar, location: e.target.value })}
+                        placeholder="Ex: Maputo"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <Label htmlFor="description">Descrição</Label>
+                      <Textarea
+                        id="description"
+                        value={newCar.description}
+                        onChange={(e) => setNewCar({ ...newCar, description: e.target.value })}
+                        placeholder="Descrição detalhada do veículo..."
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={newCar.featured}
+                          onChange={(e) => setNewCar({ ...newCar, featured: e.target.checked })}
+                          className="rounded border-input"
+                        />
+                        <span>Marcar como destaque</span>
+                      </label>
                     </div>
                   </div>
-                </div>
-              ))}
+                  
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      onClick={editingCar ? handleUpdateCar : handleAddCar} 
+                      variant="premium" 
+                      className="flex-1"
+                      disabled={createCarMutation.isPending || updateCarMutation.isPending}
+                    >
+                      {createCarMutation.isPending || updateCarMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : null}
+                      {editingCar ? "Atualizar Carro" : "Adicionar Carro"}
+                    </Button>
+                    <Button 
+                      onClick={() => setIsAddingCar(false)} 
+                      variant="outline" 
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-interface AdminSearchProps {
-  selectedCars: string[];
-  setSelectedCars: (cars: string[]) => void;
-  showBulkActions: boolean;
-  setShowBulkActions: (show: boolean) => void;
-  onBulkActionComplete: (action: string, results: any) => void;
-}
 
-const AdminSearch: React.FC<AdminSearchProps> = ({
-  selectedCars,
-  setSelectedCars,
-  showBulkActions,
-  setShowBulkActions,
-  onBulkActionComplete
-}) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    brand: "all",
-    name: "all",
-    year: "all",
-    priceRange: "all",
-    status: "all",
-    fuel: "all"
-  });
-  const [sortBy, setSortBy] = useState("brand");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
-  // Get unique values for filters
-  const brands = Array.from(new Set(cars.map(car => car.brand))).sort();
-  const names = Array.from(new Set(cars.map(car => car.name))).sort();
-  const years = Array.from(new Set(cars.map(car => car.year))).sort((a, b) => b - a);
-  const fuels = Array.from(new Set(cars.map(car => car.fuel))).sort();
-
-  // Filter and sort cars
-  const filteredCars = cars
-    .filter(car => {
-      const matchesSearch = car.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           car.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (car.color && car.color.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesBrand = filters.brand === "all" || car.brand === filters.brand;
-      const matchesName = filters.name === "all" || car.name === filters.name;
-      const matchesYear = filters.year === "all" || car.year.toString() === filters.year;
-      const matchesFuel = filters.fuel === "all" || car.fuel === filters.fuel;
-      const isAvailable = Math.random() > 0.3; // Simulate availability
-      const matchesStatus = filters.status === "all" || 
-                           (filters.status === "available" && isAvailable) ||
-                           (filters.status === "sold" && !isAvailable);
-      
-      const matchesPriceRange = filters.priceRange === "all" || 
-                               (filters.priceRange === "0-50000" && car.price <= 50000) ||
-                               (filters.priceRange === "50000-100000" && car.price > 50000 && car.price <= 100000) ||
-                               (filters.priceRange === "100000+" && car.price > 100000);
-
-      return matchesSearch && matchesBrand && matchesName && matchesYear && 
-             matchesFuel && matchesStatus && matchesPriceRange;
-    })
-    .sort((a, b) => {
-      let aValue = a[sortBy as keyof typeof a];
-      let bValue = b[sortBy as keyof typeof b];
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-      
-      if (sortOrder === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedCars(filteredCars.map(car => car.id));
-    } else {
-      setSelectedCars([]);
-    }
-  };
-
-  const handleSelectCar = (carId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedCars([...selectedCars, carId]);
-    } else {
-      setSelectedCars(selectedCars.filter(id => id !== carId));
-    }
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      brand: "all",
-      name: "all",
-      year: "all",
-      priceRange: "all",
-      status: "all",
-      fuel: "all"
-    });
-    setSearchTerm("");
-  };
-
-  const getActiveFiltersCount = () => {
-    return Object.values(filters).filter(value => value !== "all").length + (searchTerm ? 1 : 0);
-  };
-
-  const handleBulkAction = (action: string) => {
-    console.log(`Ação em lote: ${action} para ${selectedCars.length} carros`);
-    // Implement bulk actions here
-    setSelectedCars([]);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Busca e Filtros</h1>
-          <p className="text-gray-600">Sistema avançado de busca e filtros administrativos</p>
-        </div>
-        <Button onClick={() => handleBulkAction('export')} variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar
-        </Button>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Busca Avançada
-            </span>
-            {getActiveFiltersCount() > 0 && (
-              <Button onClick={clearFilters} variant="outline" size="sm">
-                <X className="h-4 w-4 mr-2" />
-                Limpar Filtros ({getActiveFiltersCount()})
-              </Button>
+            {carsError && (
+              <Alert>
+                <AlertDescription>
+                  Erro ao carregar carros: {carsError}
+                </AlertDescription>
+              </Alert>
             )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar por marca, modelo ou cor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Carros ({cars?.length || 0} total)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {carsLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <span className="ml-2">Carregando carros...</span>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Marca</TableHead>
+                        <TableHead>Ano</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cars?.map((car) => (
+                        <TableRow key={car.id}>
+                          <TableCell className="font-medium">{car.model}</TableCell>
+                          <TableCell>{car.make}</TableCell>
+                          <TableCell>{car.year}</TableCell>
+                          <TableCell>{car.formatted_price || formatPrice(car.price)}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{car.category.name}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {car.featured ? (
+                              <Badge className="bg-accent text-accent-foreground">Destaque</Badge>
+                            ) : (
+                              <Badge variant="outline">Normal</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => navigate(`/car/${car.id}`)}
+                                title="Ver detalhes"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleManageImages(car.id)}
+                                title="Gerenciar imagens"
+                              >
+                                <Images className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleEditCar(car)}
+                                title="Editar carro"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleDeleteCar(car.id)}
+                                title="Excluir carro"
+                                disabled={deleteCarMutation.isPending}
+                              >
+                                {deleteCarMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </div>
+        )}
 
-          {/* Filters Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Marca</label>
-              <Select value={filters.brand} onValueChange={(value) => setFilters({...filters, brand: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as marcas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as marcas</SelectItem>
-                  {brands.map(brand => (
-                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Nome do Modelo</label>
-              <Select value={filters.name} onValueChange={(value) => setFilters({...filters, name: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os modelos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os modelos</SelectItem>
-                  {names.map(name => (
-                    <SelectItem key={name} value={name}>{name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Ano</label>
-              <Select value={filters.year} onValueChange={(value) => setFilters({...filters, year: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os anos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os anos</SelectItem>
-                  {years.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Faixa de Preço</label>
-              <Select value={filters.priceRange} onValueChange={(value) => setFilters({...filters, priceRange: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as faixas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as faixas</SelectItem>
-                  <SelectItem value="0-50000">Até 50.000 MZN</SelectItem>
-                  <SelectItem value="50000-100000">50.000 - 100.000 MZN</SelectItem>
-                  <SelectItem value="100000+">Acima de 100.000 MZN</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="available">Disponível</SelectItem>
-                  <SelectItem value="sold">Vendido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Combustível</label>
-              <Select value={filters.fuel} onValueChange={(value) => setFilters({...filters, fuel: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os combustíveis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os combustíveis</SelectItem>
-                  {fuels.map(fuel => (
-                    <SelectItem key={fuel} value={fuel}>{fuel}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Sort Options */}
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Ordenar por</label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="brand">Marca</SelectItem>
-                  <SelectItem value="name">Nome do Modelo</SelectItem>
-                  <SelectItem value="year">Ano</SelectItem>
-                  <SelectItem value="price">Preço</SelectItem>
-                  <SelectItem value="mileage">Quilometragem</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            >
-              {sortOrder === "asc" ? "Crescente" : "Decrescente"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Results */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>
-              Resultados ({filteredCars.length} carros)
-            </CardTitle>
-            {selectedCars.length > 0 && (
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => setShowBulkActions(!showBulkActions)} 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Settings className="h-4 w-4" />
-                  Ações em Massa ({selectedCars.length})
-                </Button>
-                <Button onClick={() => handleBulkAction('feature')} variant="outline" size="sm">
-                  <Star className="h-4 w-4 mr-1" />
-                  Destacar
-                </Button>
-                <Button onClick={() => handleBulkAction('delete')} variant="destructive" size="sm">
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Excluir
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Select All */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="select-all"
-                checked={selectedCars.length === filteredCars.length && filteredCars.length > 0}
-                onCheckedChange={handleSelectAll}
-              />
-              <label htmlFor="select-all" className="text-sm font-medium">
-                Selecionar todos ({filteredCars.length})
-              </label>
-            </div>
-
-            {/* Cars Table */}
-            <div className="border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="w-12 p-3"></th>
-                      <th className="text-left p-3 font-medium">Carro</th>
-                      <th className="text-left p-3 font-medium">Preço</th>
-                      <th className="text-left p-3 font-medium">Ano</th>
-                      <th className="text-left p-3 font-medium">KM</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCars.map((car) => (
-                      <tr key={car.id} className="border-t hover:bg-gray-50">
-                        <td className="p-3">
-                          <Checkbox
-                            checked={selectedCars.includes(car.id)}
-                            onCheckedChange={(checked) => handleSelectCar(car.id, checked as boolean)}
-                          />
-                        </td>
-                        <td className="p-3">
-                          <div>
-                            <div className="font-medium">{car.brand} {car.name}</div>
-                            <div className="text-sm text-gray-500">{car.color || 'N/A'} • {car.fuel} • {car.transmission || 'N/A'}</div>
-                          </div>
-                        </td>
-                        <td className="p-3 font-medium">{formatPrice(car.price)}</td>
-                        <td className="p-3">{car.year}</td>
-                        <td className="p-3">{formatNumber(car.mileage)} km</td>
-                        <td className="p-3">
-                          <Badge variant={Math.random() > 0.3 ? "default" : "secondary"}>
-                            {Math.random() > 0.3 ? "Disponível" : "Vendido"}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// Main Admin Component
-const Admin = () => {
-  const [selectedCars, setSelectedCars] = useState<string[]>([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
-  const [currentSection, setCurrentSection] = useState<string>('overview');
-
-  const handleBulkActionComplete = (action: string, results: any) => {
-    console.log(`Ação ${action} completada:`, results);
-    setSelectedCars([]);
-    setShowBulkActions(false);
-  };
-
-  const navigateToSection = (section: string) => {
-    setCurrentSection(section);
-  };
-
-  const getSectionTitle = (section: string) => {
-    const titles = {
-      overview: 'Painel Inicial',
-      dashboard: 'Dashboard Executivo',
-      search: 'Busca e Filtros',
-      register: 'Cadastrar Novo Carro',
-      categories: 'Gestão de Categorias',
-      images: 'Upload de Imagens',
-      bulk: 'Ações em Massa'
-    };
-    return titles[section as keyof typeof titles] || 'Painel Administrativo';
-  };
-
-  const renderCurrentSection = () => {
-    switch (currentSection) {
-      case 'overview':
-        return <MinimalAdmin onNavigateToSection={navigateToSection} />;
-      case 'dashboard':
-        return <AdminDashboard />;
-      case 'search':
-        return (
+        {/* Categories Tab */}
+        {activeTab === "categories" && (
           <div className="space-y-6">
-            <AdminSearch 
-              selectedCars={selectedCars}
-              setSelectedCars={setSelectedCars}
-              showBulkActions={showBulkActions}
-              setShowBulkActions={setShowBulkActions}
-              onBulkActionComplete={handleBulkActionComplete}
-            />
-            {showBulkActions && (
-              <BulkActions
-                selectedItems={selectedCars}
-                onActionComplete={handleBulkActionComplete}
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Gerenciar Categorias</h2>
+              <Dialog open={isAddingCategory} onOpenChange={setIsAddingCategory}>
+                <DialogTrigger asChild>
+                  <Button variant="premium">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Categoria
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Nova Categoria</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div>
+                    <Label htmlFor="categoryName">Nome da Categoria</Label>
+                    <Input
+                      id="categoryName"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Ex: Pickup, Conversível, SUV Compacto"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button onClick={handleAddCategory} variant="premium" className="flex-1">
+                      Adicionar
+                    </Button>
+                    <Button onClick={() => setIsAddingCategory(false)} variant="outline" className="flex-1">
+                      Cancelar
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Categorias ({categories?.length || 0} total)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {categoriesLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <span className="ml-2">Carregando categorias...</span>
+                  </div>
+                ) : categoriesError ? (
+                  <Alert>
+                    <AlertDescription>
+                      Erro ao carregar categorias: {categoriesError}
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {categories?.map((category) => {
+                      const carCount = cars?.filter(car => car.category.id === category.id).length || 0;
+                      return (
+                        <Card key={category.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="secondary">{category.name}</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {}}
+                                title="Excluir categoria"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {carCount} {carCount === 1 ? 'carro' : 'carros'}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Image Upload Dialog */}
+        <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Imagens do Carro</DialogTitle>
+            </DialogHeader>
+            
+            {selectedCarForImages && (
+              <CarImageUpload
+                carId={selectedCarForImages}
+                existingImages={cars?.find(car => car.id === selectedCarForImages)?.images || []}
+                onImagesUpdated={handleImagesUpdated}
+                maxFiles={10}
+                maxSize={5}
               />
             )}
-          </div>
-        );
-      case 'register':
-        return <CarRegistrationPage />;
-      case 'categories':
-        return <CategoryManagementPage />;
-      case 'images':
-        return <ImageManagement />;
-      case 'bulk':
-        return (
-          <BulkActions
-            selectedItems={[]}
-            onActionComplete={(action, results) => console.log('Bulk action:', action, results)}
-          />
-        );
-      default:
-        return <MinimalAdmin onNavigateToSection={navigateToSection} />;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navegação apenas para seções não-overview */}
-      {currentSection !== 'overview' && (
-        <>
-          {/* Top Navigation Simples */}
-          <div className="bg-white border-b">
-            <div className="container mx-auto px-4 py-3">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => navigateToSection('overview')}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  ← Voltar ao Painel
-                </button>
-                
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    Online
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Breadcrumb Simples */}
-          <div className="bg-gray-50 border-b">
-            <div className="container mx-auto px-4 py-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Painel</span>
-                <span>›</span>
-                <span className="text-gray-900 font-medium">{getSectionTitle(currentSection)}</span>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Main Content */}
-      <div className={currentSection === 'overview' ? '' : 'container mx-auto px-4 py-8'}>
-        {renderCurrentSection()}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -5,49 +5,47 @@ import HeroSection from "@/components/HeroSection";
 import CarCard from "@/components/CarCard";
 import CarFilters, { FilterState } from "@/components/CarFilters";
 import { Footer } from "@/components/Footer";
-import { cars, Car } from "@/data/cars";
+import { useCars, useFeaturedCars } from "@/hooks/useApi";
+import { Car } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Fuel, Gauge, MapPin, Palette, Settings2, Phone } from "lucide-react";
+import { Calendar, Fuel, Gauge, MapPin, Palette, Settings2, Phone, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/mozambique-utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Index = () => {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: "Todos",
-    priceRange: [0, 500000],
-    yearRange: [2015, 2024],
+    priceRange: [0, 50000000],
+    yearRange: [1980, 2025],
     brand: ""
   });
   
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [showDialog, setShowDialog] = useState(false);
 
-  const filteredCars = useMemo(() => {
-    return cars.filter(car => {
-      const matchesSearch = filters.search === "" || 
-        car.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        car.brand.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesCategory = filters.category === "Todos" || car.category === filters.category;
-      
-      const matchesBrand = filters.brand === "" || filters.brand === "Todos" || car.brand === filters.brand;
-      
-      const matchesPrice = car.price >= filters.priceRange[0] && car.price <= filters.priceRange[1];
-      
-      const matchesYear = car.year >= filters.yearRange[0] && car.year <= filters.yearRange[1];
+  // Buscar carros da API
+  const apiFilters = useMemo(() => ({
+    search: filters.search || undefined,
+    price_min: filters.priceRange[0],
+    price_max: filters.priceRange[1],
+    year_min: filters.yearRange[0],
+    year_max: filters.yearRange[1],
+    make: filters.brand && filters.brand !== "Todos" ? filters.brand : undefined,
+  }), [filters]);
 
-      return matchesSearch && matchesCategory && matchesBrand && matchesPrice && matchesYear;
-    });
-  }, [cars, filters]);
+  const { data: carsData, loading: carsLoading, error: carsError } = useCars(apiFilters);
+  const { data: featuredCars, loading: featuredLoading, error: featuredError } = useFeaturedCars();
 
   const handleViewDetails = (car: Car) => {
     setSelectedCar(car);
     setShowDialog(true);
   };
 
-  const formatMileage = (mileage: number) => {
+  const formatMileage = (mileage?: number) => {
+    if (!mileage) return "N/A";
     return `${(mileage / 1000).toFixed(0)}k km`;
   };
 
@@ -67,11 +65,24 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cars.filter(car => car.featured).map((car) => (
-              <CarCard key={car.id} car={car} onViewDetails={handleViewDetails} />
-            ))}
-          </div>
+          {featuredLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Carregando carros em destaque...</span>
+            </div>
+          ) : featuredError ? (
+            <Alert>
+              <AlertDescription>
+                Erro ao carregar carros em destaque: {featuredError}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredCars?.map((car) => (
+                <CarCard key={car.id} car={car} onViewDetails={handleViewDetails} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -95,14 +106,25 @@ const Index = () => {
                     Nosso Catálogo
                   </h3>
                   <p className="text-muted-foreground mt-1">
-                    {filteredCars.length} veículo{filteredCars.length !== 1 ? 's' : ''} encontrado{filteredCars.length !== 1 ? 's' : ''}
+                    {carsData?.length || 0} veículo{(carsData?.length || 0) !== 1 ? 's' : ''} encontrado{(carsData?.length || 0) !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
 
-              {filteredCars.length > 0 ? (
+              {carsLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Carregando carros...</span>
+                </div>
+              ) : carsError ? (
+                <Alert>
+                  <AlertDescription>
+                    Erro ao carregar carros: {carsError}
+                  </AlertDescription>
+                </Alert>
+              ) : carsData && carsData.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredCars.map((car) => (
+                  {carsData.map((car) => (
                     <CarCard key={car.id} car={car} onViewDetails={handleViewDetails} />
                   ))}
                 </div>
@@ -118,8 +140,8 @@ const Index = () => {
                     <Button variant="outline" onClick={() => setFilters({
                       search: "",
                       category: "Todos",
-                      priceRange: [0, 500000],
-                      yearRange: [2015, 2024],
+                      priceRange: [0, 5000000],
+                      yearRange: [2000, 2025],
                       brand: ""
                     })}>
                       Limpar Filtros
@@ -139,15 +161,15 @@ const Index = () => {
             <>
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">
-                  {selectedCar.name}
+                  {selectedCar.make} {selectedCar.model}
                 </DialogTitle>
               </DialogHeader>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <img
-                    src={selectedCar.images[0]}
-                    alt={selectedCar.name}
+                    src={selectedCar.primary_image || selectedCar.images[0]?.image || "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80"}
+                    alt={`${selectedCar.make} ${selectedCar.model}`}
                     className="w-full h-64 object-cover rounded-lg"
                   />
                   
@@ -156,22 +178,24 @@ const Index = () => {
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span>{selectedCar.year}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4 text-muted-foreground" />
-                      <span>{formatMileage(selectedCar.mileage)}</span>
-                    </div>
+                    {selectedCar.mileage && (
+                      <div className="flex items-center gap-2">
+                        <Gauge className="h-4 w-4 text-muted-foreground" />
+                        <span>{formatMileage(selectedCar.mileage)}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <Fuel className="h-4 w-4 text-muted-foreground" />
-                      <span>{selectedCar.fuel}</span>
+                      <span>{selectedCar.fuel_type || selectedCar.fuel}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{selectedCar.location}</span>
+                      <span>{selectedCar.location || "Maputo"}</span>
                     </div>
                     {selectedCar.transmission && (
                       <div className="flex items-center gap-2">
                         <Settings2 className="h-4 w-4 text-muted-foreground" />
-                        <span>{selectedCar.transmission}</span>
+                        <span>{selectedCar.transmission === 'manual' ? 'Manual' : 'Automática'}</span>
                       </div>
                     )}
                     {selectedCar.color && (
@@ -186,7 +210,7 @@ const Index = () => {
                 <div>
                   <div className="mb-4">
                     <Badge variant="secondary" className="mb-2">
-                      {selectedCar.category}
+                      {selectedCar.category.name}
                     </Badge>
                     <h3 className="text-lg font-semibold text-muted-foreground">
                       {selectedCar.brand}
@@ -195,7 +219,7 @@ const Index = () => {
                   
                   <div className="mb-6">
                     <p className="text-3xl font-bold text-primary mb-2">
-                      {formatPrice(selectedCar.price)}
+                      {selectedCar.formatted_price || formatPrice(selectedCar.price)}
                     </p>
                   </div>
                   
