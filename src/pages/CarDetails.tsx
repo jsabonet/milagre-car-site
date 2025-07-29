@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Fuel, Gauge, MapPin, Edit, Trash2 } from 'lucide-react';
 import { useCar } from '@/hooks/useApi';
 import CarImageUpload from '@/components/CarImageUpload';
+import CarImageGallery from '@/components/CarImageGallery';
 import { formatPrice } from '@/lib/mozambique-utils';
 import Header from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -160,15 +161,36 @@ const CarDetails = () => {
             </Card>
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <CarImageUpload
-              carId={carId}
-              existingImages={car.images}
-              onImagesUpdated={handleImagesUpdated}
-              maxFiles={10}
-              maxSize={5}
-            />
+          {/* Image Gallery and Management */}
+          <div className="space-y-6">
+            {/* Car Image Gallery */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Galeria de Imagens</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CarImageGallery 
+                  images={car.images} 
+                  carName={`${car.brand} ${car.name}`}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Image Management for Admins */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciar Imagens</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CarImageUpload
+                  carId={carId}
+                  existingImages={car.images}
+                  onImagesUpdated={handleImagesUpdated}
+                  maxFiles={10}
+                  maxSize={5}
+                />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

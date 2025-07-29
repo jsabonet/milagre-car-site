@@ -69,6 +69,7 @@ class CarViewSet(viewsets.ModelViewSet):
         if 'transmission' in data:
             transmission_mapping = {
                 'manual': 'Manual',
+                'automatic': 'Automática',
                 'automática': 'Automática',
                 'automatica': 'Automática',
                 'cvt': 'CVT',
@@ -94,6 +95,12 @@ class CarViewSet(viewsets.ModelViewSet):
             data['fuel'] = fuel_mapping.get(lower_value, fuel_value)
         
         logger.info(f"Mapped data: {data}")
+        
+        # Check if description is present
+        if 'description' in data:
+            logger.info(f"Description found: '{data['description']}'")
+        else:
+            logger.info("Description field not found in data")
         
         serializer = self.get_serializer(data=data)
         if not serializer.is_valid():
@@ -219,16 +226,20 @@ class CarViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def set_primary_image(self, request, pk=None):
         """Definir uma imagem como primária"""
+        logger.info(f"set_primary_image chamado para carro {pk} com dados: {request.data}")
+        
         car = self.get_object()
         image_id = request.data.get('image_id')
         
         if not image_id:
+            logger.warning(f"ID da imagem não fornecido para carro {pk}")
             return Response(
                 {'error': 'ID da imagem é obrigatório'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         try:
+            logger.info(f"Removendo flag primário de todas as imagens do carro {pk}")
             # Remove o flag primário de todas as imagens
             car.images.update(is_primary=False)
             
@@ -236,6 +247,8 @@ class CarViewSet(viewsets.ModelViewSet):
             car_image = car.images.get(id=image_id)
             car_image.is_primary = True
             car_image.save()
+            
+            logger.info(f"Imagem {image_id} definida como primária para carro {pk}")
             
             return Response({
                 'message': 'Imagem definida como primária',

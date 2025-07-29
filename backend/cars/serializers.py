@@ -29,7 +29,7 @@ class CarListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'make', 'model', 'brand', 'name', 'year', 'price', 'formatted_price',
             'fuel_type', 'fuel', 'transmission', 'category', 'primary_image',
-            'mileage', 'color', 'location', 'featured', 'created_at'
+            'mileage', 'color', 'location', 'description', 'featured', 'created_at'
         ]
     
     def get_primary_image(self, obj):
@@ -107,16 +107,25 @@ class CarCreateSerializer(serializers.ModelSerializer):
         required=False
     )
     
+    # Frontend compatibility fields
+    make = serializers.CharField(source='brand', write_only=True, required=False)
+    model = serializers.CharField(source='name', write_only=True, required=False)
+    fuel_type = serializers.CharField(source='fuel', write_only=True, required=False)
+    is_available = serializers.BooleanField(default=True, write_only=True)  # Aceita mas ignora
+    
     class Meta:
         model = Car
         fields = [
             'name', 'brand', 'year', 'price', 'fuel', 'transmission',
             'mileage', 'color', 'location', 'description', 'category', 'featured',
-            'images', 'uploaded_images'
+            'images', 'uploaded_images', 'make', 'model', 'fuel_type', 'is_available'
         ]
     
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
+        # Remove is_available since it's not a model field
+        validated_data.pop('is_available', None)
+        
         car = Car.objects.create(**validated_data)
         
         # Criar imagens

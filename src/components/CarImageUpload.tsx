@@ -116,9 +116,10 @@ const CarImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleRemoveImage = async (imageId: number) => {
     try {
-      // Implementação será adicionada na API
-      console.log('Remove image:', imageId);
-      setError('Funcionalidade em desenvolvimento');
+      await apiService.removeCarImage(carId, imageId);
+      const newImages = images.filter(img => img.id !== imageId);
+      setImages(newImages);
+      onImagesUpdated?.(newImages);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao remover imagem');
     }
@@ -126,10 +127,20 @@ const CarImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleSetPrimary = async (imageId: number) => {
     try {
-      // Implementação será adicionada na API
-      console.log('Set primary:', imageId);
-      setError('Funcionalidade em desenvolvimento');
+      console.log('Definindo imagem como principal:', imageId);
+      await apiService.setCarPrimaryImage(carId, imageId);
+      
+      // Atualizar o estado local
+      const newImages = images.map(img => ({
+        ...img,
+        is_primary: img.id === imageId
+      }));
+      
+      console.log('Imagens atualizadas:', newImages);
+      setImages(newImages);
+      onImagesUpdated?.(newImages);
     } catch (err) {
+      console.error('Erro ao definir imagem principal:', err);
       setError(err instanceof Error ? err.message : 'Erro ao definir imagem principal');
     }
   };
@@ -230,7 +241,10 @@ const CarImageUpload: React.FC<ImageUploadProps> = ({
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => handleSetPrimary(image.id)}
+                        onClick={() => {
+                          console.log('Botão ⭐ clicado para imagem:', image.id);
+                          handleSetPrimary(image.id);
+                        }}
                         className="text-xs"
                       >
                         <Star className="h-3 w-3" />

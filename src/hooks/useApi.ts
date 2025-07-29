@@ -268,30 +268,34 @@ export function useCreateCar() {
   return useMutation({
     mutationFn: async (carData: any) => {
       console.log('Creating car with data:', carData);
-      const formData = new FormData();
       
-      // Only append non-empty fields
+      // Send as JSON instead of FormData
+      const cleanData: any = {};
+      
+      // Map and clean the data
       Object.keys(carData).forEach(key => {
         const value = carData[key];
-        if (value !== undefined && value !== null && value !== '') {
-          // Convert boolean to string for form data
+        if (value !== undefined && value !== null) {
           if (typeof value === 'boolean') {
-            formData.append(key, value.toString());
+            cleanData[key] = value;
           } else if (typeof value === 'number' && !isNaN(value)) {
-            formData.append(key, value.toString());
-          } else if (typeof value === 'string' && value.trim() !== '') {
-            formData.append(key, value.trim());
+            cleanData[key] = value;
+          } else if (typeof value === 'string') {
+            // For description field, allow empty strings
+            if (key === 'description') {
+              cleanData[key] = value;
+            } else if (value.trim() !== '') {
+              cleanData[key] = value.trim();
+            }
           }
         }
       });
       
-      // Log the form data for debugging
-      console.log('FormData contents:');
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-      }
+      console.log('Clean data to send:', cleanData);
+      console.log('Description in cleanData:', cleanData.description);
       
-      return apiService.createCar(formData);
+      const createdCar = await apiService.createCar(cleanData);
+      return createdCar;
     },
     onSuccess: () => {
       console.log('Car created successfully, invalidating queries');

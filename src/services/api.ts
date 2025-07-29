@@ -22,7 +22,6 @@ export interface Car {
   images: CarImage[];
   primary_image?: string;
   featured: boolean;
-  is_available: boolean;
   created_at: string;
   updated_at?: string;
 }
@@ -123,11 +122,10 @@ class ApiService {
     return this.makeRequest<Car>(`/cars/${id}/`);
   }
 
-  async createCar(carData: FormData): Promise<Car> {
+  async createCar(carData: any): Promise<Car> {
     return this.makeRequest<Car>('/cars/', {
       method: 'POST',
-      headers: {}, // Remove Content-Type para FormData
-      body: carData,
+      body: JSON.stringify(carData),
     });
   }
 
@@ -178,11 +176,22 @@ class ApiService {
     });
   }
 
-  async setCarPrimaryImage(carId: number, imageId: number): Promise<{ message: string; image_id: number }> {
-    return this.makeRequest(`/cars/${carId}/set_primary_image/`, {
-      method: 'POST',
-      body: JSON.stringify({ image_id: imageId }),
-    });
+  async setCarPrimaryImage(carId: number, imageId: number): Promise<any> {
+    console.log(`setCarPrimaryImage chamado: carId=${carId}, imageId=${imageId}`);
+    const url = `/cars/${carId}/set_primary_image/`;
+    console.log(`URL da requisição: ${API_BASE_URL}${url}`);
+    
+    try {
+      const result = await this.makeRequest(url, {
+        method: 'POST',
+        body: JSON.stringify({ image_id: imageId }),
+      });
+      console.log('setCarPrimaryImage sucesso:', result);
+      return result;
+    } catch (error) {
+      console.error('setCarPrimaryImage erro:', error);
+      throw error;
+    }
   }
 
   // Métodos para Categories
