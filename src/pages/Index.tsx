@@ -279,7 +279,7 @@ const Index = () => {
                       {selectedCar.transmission && (
                         <div className="flex items-center gap-2">
                           <Settings2 className="h-4 w-4 text-muted-foreground" />
-                          <span>{selectedCar.transmission === 'manual' ? 'Manual' : 'Automática'}</span>
+                          <span>{selectedCar.transmission === 'manual' ? 'Manual' : selectedCar.transmission === 'automática' ? 'Automática' : 'Semi-automática'}</span>
                         </div>
                       )}
                       {selectedCar.color && (

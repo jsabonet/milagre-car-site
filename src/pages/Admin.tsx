@@ -129,7 +129,7 @@ const Admin = () => {
       return;
     }
 
-    if (newCar.year && (isNaN(Number(newCar.year)) || Number(newCar.year) < 1900 || Number(newCar.year) > new Date().getFullYear() + 1)) {
+    if (newCar.year && (isNaN(Number(newCar.year)) || Number(newCar.year) < 1975 || Number(newCar.year) > new Date().getFullYear() + 1)) {
       toast({
         title: "Erro",
         description: "Ano deve ser válido",
@@ -154,38 +154,41 @@ const Admin = () => {
         price: Number(newCar.price),
         year: newCar.year ? Number(newCar.year) : undefined,
         mileage: newCar.mileage ? Number(newCar.mileage) : undefined,
-        // Corrija aqui: envie category como número ou undefined
         category: newCar.category ? Number(newCar.category) : undefined,
       };
 
-      // Primeiro, cria o carro
+      // 1. Cria o carro (apenas dados, sem imagens)
       const createdCar = await createCarMutation.mutateAsync(cleanCarData);
 
-      // Upload da imagem principal
-      if (primaryImage && createdCar) {
-        const formData = new FormData();
-        formData.append('images', primaryImage);
-        formData.append('is_primary', 'true');
-        formData.append('alt_text_0', `${newCar.make} ${newCar.model} - Capa`);
-        // Corrigido: Content-Type deve ser omitido para FormData
-        await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
-          method: 'POST',
-          body: formData,
-        });
-      }
+      // Adicione este log para depuração:
+      console.log('createdCar:', createdCar);
 
-      // Upload das imagens secundárias
-      if (selectedImages.length > 0 && createdCar) {
+      // Só faz upload se o carro foi criado e tem id
+      if (createdCar && createdCar.id) {
         const formData = new FormData();
+        if (primaryImage) {
+          formData.append('images', primaryImage);
+          formData.append('is_primary', 'true');
+          formData.append('alt_text_0', `${newCar.make} ${newCar.model} - Capa`);
+        }
         selectedImages.forEach((file, index) => {
           formData.append('images', file);
-          formData.append(`alt_text_${index}`, `${newCar.make} ${newCar.model} - Imagem ${index + 1}`);
+          formData.append(`alt_text_${index + 1}`, `${newCar.make} ${newCar.model} - Imagem ${index + 1}`);
         });
-        // Não defina is_primary aqui!
-        await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
-          method: 'POST',
-          body: formData,
+
+        if (primaryImage || selectedImages.length > 0) {
+          await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao criar carro (ID não retornado pelo backend)",
+          variant: "destructive"
         });
+        return;
       }
 
       toast({
@@ -645,6 +648,7 @@ const Admin = () => {
                         <SelectContent>
                           <SelectItem value="Manual">Manual</SelectItem>
                           <SelectItem value="Automática">Automática</SelectItem>
+                          <SelectItem value="Semi-automática">Semi-automática</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -23,7 +23,7 @@ class CarListSerializer(serializers.ModelSerializer):
     make = serializers.CharField(source='brand', read_only=True)
     model = serializers.CharField(source='name', read_only=True)
     fuel_type = serializers.CharField(source='fuel', read_only=True)
-    images = CarImageSerializer(many=True, read_only=True)  # <-- ADICIONE ESTA LINHA
+    images = CarImageSerializer(many=True, read_only=True)  # <-- Certifique-se que está presente
     
     class Meta:
         model = Car
@@ -45,6 +45,13 @@ class CarListSerializer(serializers.ModelSerializer):
     
     def get_formatted_price(self, obj):
         return f"{obj.price:,.0f} MZN"
+
+    def to_representation(self, instance):
+        import logging
+        logger = logging.getLogger("cars")
+        data = super().to_representation(instance)
+        logger.info(f"[CarListSerializer] Carro ID: {instance.id} - images: {data.get('images')}")
+        return data
 
 class CarDetailSerializer(serializers.ModelSerializer):
     category = CategoryListSerializer(read_only=True)
@@ -100,6 +107,13 @@ class CarDetailSerializer(serializers.ModelSerializer):
         if value is not None and value < 0:
             raise serializers.ValidationError("Quilometragem não pode ser negativa")
         return value
+
+    def to_representation(self, instance):
+        import logging
+        logger = logging.getLogger("cars")
+        data = super().to_representation(instance)
+        logger.info(f"[CarDetailSerializer] Carro ID: {instance.id} - images: {data.get('images')}")
+        return data
 
 class CarCreateSerializer(serializers.ModelSerializer):
     images = CarImageSerializer(many=True, read_only=True)

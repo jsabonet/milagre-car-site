@@ -57,10 +57,10 @@ const Cars = () => {
   const [filters, setFilters] = useState<ExtendedFilterState>({
     search: "",
     category: "Todos",
-    priceRange: [0, 5000000],
+    priceRange: [0, 50000000],
     yearRange: [1975, 2025], // <-- Corrigido aqui
     brand: "",
-    mileageRange: [0, 2000000],
+    mileageRange: [0, 200000000],
     transmission: "",
     color: "",
     fuelType: "",
@@ -95,6 +95,19 @@ const Cars = () => {
     make: filters.brand && filters.brand !== "Todos" ? filters.brand : undefined,
     // Add more filters as needed
   });
+
+  // DEBUG: Log the raw carsData to investigate missing vehicles
+  useEffect(() => {
+    console.log("DEBUG Cars.tsx - carsData from API:", carsData);
+    if (carsData && Array.isArray(carsData)) {
+      const ids = carsData.map(car => car.id);
+      console.log("DEBUG Cars.tsx - IDs retornados:", ids);
+      const categories = carsData.map(car => car.category && typeof car.category === "object" ? car.category.name : car.category);
+      console.log("DEBUG Cars.tsx - Categorias retornadas:", categories);
+      const brands = carsData.map(car => car.brand);
+      console.log("DEBUG Cars.tsx - Marcas retornadas:", brands);
+    }
+  }, [carsData]);
 
   // Normalize images for all cars (API or fallback)
   const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80";
@@ -132,21 +145,29 @@ const Cars = () => {
   
   // Filtros iguais ao Index.tsx (ajuste para comparar corretamente categoria e marca)
   const filteredCars = useMemo(() => {
-    return cars.filter(car => {
+    // DEBUG: Log filters and cars before filtering
+    console.log("DEBUG Cars.tsx - Filtros atuais:", filters);
+    console.log("DEBUG Cars.tsx - Quantidade de carros antes do filtro:", cars.length);
+
+    const filtered = cars.filter(car => {
+      // Corrigido: aceita carros sem categoria ou com categoria nula
       const matchesSearch = filters.search === "" || 
         (car.name && car.name.toLowerCase().includes(filters.search.toLowerCase())) ||
         (car.brand && car.brand.toLowerCase().includes(filters.search.toLowerCase()));
 
-      // Corrigido: compara categoria pelo nome, não pelo objeto inteiro
-      // ATENÇÃO: se algum carro não tiver category ou category.name, ele será filtrado fora!
-      const matchesCategory = filters.category === "Todos" || 
-        (car.category && (
-          typeof car.category === "string"
-            ? car.category === filters.category
-            : car.category.name === filters.category
-        ));
+      // Corrigido: se filtro for "Todos", aceita qualquer categoria (inclusive null)
+      let matchesCategory = true;
+      if (filters.category !== "Todos") {
+        if (car.category && typeof car.category === "object" && "name" in car.category) {
+          matchesCategory = car.category.name === filters.category;
+        } else if (typeof car.category === "string") {
+          matchesCategory = car.category === filters.category;
+        } else {
+          matchesCategory = false;
+        }
+      }
 
-      // Corrigido: compara marca pelo nome, não pelo objeto inteiro
+      // Corrigido: aceita carros sem marca se filtro for "Todos" ou vazio
       const matchesBrand = filters.brand === "" || filters.brand === "Todos" || 
         (car.brand && car.brand === filters.brand);
 
@@ -158,18 +179,17 @@ const Cars = () => {
       const matchesColor = filters.color === "" || car.color === filters.color;
       const matchesFuel = filters.fuelType === "" || car.fuel === filters.fuelType;
 
-      // DEBUG: log para identificar carros filtrados
-      // console.log({
-      //   id: car.id,
-      //   name: car.name,
-      //   category: car.category,
-      //   matchesCategory,
-      //   filtersCategory: filters.category
-      // });
-
       return matchesSearch && matchesCategory && matchesBrand && matchesPrice && 
              matchesYear && matchesMileage && matchesTransmission && matchesColor && matchesFuel;
     });
+
+    // DEBUG: Log after filtering
+    console.log("DEBUG Cars.tsx - Quantidade de carros após filtro:", filtered.length);
+    if (filtered.length < cars.length) {
+      const filteredIds = filtered.map(car => car.id);
+      console.log("DEBUG Cars.tsx - IDs dos carros filtrados:", filteredIds);
+    }
+    return filtered;
   }, [cars, filters]);
 
   // Ordenar carros
@@ -795,5 +815,6 @@ const Cars = () => {
     </div>
   );
 };
+
 
 export default Cars;

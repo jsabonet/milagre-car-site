@@ -157,7 +157,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
         },
         'file': {
-            'level': 'INFO',
+            'level': 'DEBUG',  # <-- DEBUG para capturar logs detalhados
             'class': 'logging.FileHandler',
             'filename': BASE_DIR / 'django.log',
         },

@@ -21,7 +21,7 @@ class Car(models.Model):
     name = models.CharField(max_length=200, verbose_name="Nome do Modelo")
     brand = models.CharField(max_length=100, verbose_name="Marca")
     year = models.IntegerField(
-        validators=[MinValueValidator(1990), MaxValueValidator(2030)],
+        validators=[MinValueValidator(1975), MaxValueValidator(2030)],
         verbose_name="Ano"
     )
     
@@ -113,6 +113,9 @@ class CarImage(models.Model):
         return f"Imagem de {self.car.brand} {self.car.name}"
     
     def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger("cars")
+        logger.info(f"[CarImage.save] Salvando imagem para carro {self.car.id} - is_primary={self.is_primary} - alt_text={self.alt_text}")
         # Se esta imagem está marcada como principal, remove o flag das outras
         if self.is_primary:
             CarImage.objects.filter(car=self.car, is_primary=True).update(is_primary=False)
@@ -122,3 +125,4 @@ class CarImage(models.Model):
             self.alt_text = f"{self.car.brand} {self.car.name} - {self.car.year}"
         
         super().save(*args, **kwargs)
+        logger.info(f"[CarImage.save] Imagem salva com id={self.id} para carro {self.car.id}")

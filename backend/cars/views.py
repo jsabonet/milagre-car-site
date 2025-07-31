@@ -111,7 +111,11 @@ class CarViewSet(viewsets.ModelViewSet):
             self.perform_create(serializer)
             logger.info("Car created successfully")
             headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            # Garante que o campo 'id' está presente na resposta
+            response_data = serializer.data
+            if 'id' not in response_data and hasattr(serializer.instance, 'id'):
+                response_data['id'] = serializer.instance.id
+            return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
         except Exception as e:
             logger.error(f"Error creating car: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -160,10 +164,17 @@ class CarViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def add_images(self, request, pk=None):
         """Adicionar imagens ao carro"""
+        import logging
+        logger = logging.getLogger("cars")
         car = self.get_object()
         images = request.FILES.getlist('images')
 
+        logger.info(f"[add_images] Carro ID: {car.id}")
+        logger.info(f"[add_images] Arquivos recebidos: {[f.name for f in images]}")
+        logger.info(f"[add_images] Dados recebidos: {dict(request.data)}")
+
         if not images:
+            logger.warning("[add_images] Nenhuma imagem fornecida")
             return Response(
                 {'error': 'Nenhuma imagem fornecida'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -177,9 +188,11 @@ class CarViewSet(viewsets.ModelViewSet):
         for idx in range(len(images)):
             alt_text = request.data.get(f'alt_text_{idx}', '')
             alt_texts.append(alt_text)
+        logger.info(f"[add_images] alt_texts extraídos: {alt_texts}")
 
         # Verificar se alguma imagem deve ser marcada como primária
         is_primary_flag = request.data.get('is_primary', None)
+        logger.info(f"[add_images] is_primary_flag: {is_primary_flag}")
         for index, image in enumerate(images):
             is_primary = False
             if is_primary_flag == 'true' or is_primary_flag is True:
@@ -188,6 +201,7 @@ class CarViewSet(viewsets.ModelViewSet):
                 is_primary = True
 
             alt_text = alt_texts[index] if index < len(alt_texts) else ''
+            logger.info(f"[add_images] Salvando imagem {image.name} (is_primary={is_primary}, alt_text={alt_text})")
 
             car_image = CarImage.objects.create(
                 car=car,
@@ -197,7 +211,10 @@ class CarViewSet(viewsets.ModelViewSet):
             )
             created_images.append(car_image)
 
+        logger.info(f"[add_images] Total de imagens criadas: {len(created_images)}")
         serializer = CarImageSerializer(created_images, many=True, context={'request': request})
+
+        logger.info(f"[add_images] Imagens serializadas: {serializer.data}")
 
         return Response({
             'message': f'{len(created_images)} imagens adicionadas com sucesso',
@@ -273,4 +290,4 @@ class CarViewSet(viewsets.ModelViewSet):
                 {'error': 'Imagem não encontrada'},
                 status=status.HTTP_404_NOT_FOUND
             )
-            
+

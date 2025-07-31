@@ -29,17 +29,28 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
   // Buscar marcas dinamicamente dos carros cadastrados
   const { data: carsData } = useCars();
   const brandsSet = new Set<string>();
+  const colorsSet = new Set<string>();
+  const locationsSet = new Set<string>();
   (carsData || []).forEach(car => {
     if (car.brand && car.brand.trim() !== "") {
       brandsSet.add(car.brand.trim());
     }
+    // Adiciona cor dinâmica
+    if (car.color && car.color.trim() !== "") {
+      colorsSet.add(car.color.trim());
+    }
+    // Adiciona localização dinâmica
+    if (car.location && car.location.trim() !== "") {
+      locationsSet.add(car.location.trim());
+    }
   });
   const brands = ["Todos", ...Array.from(brandsSet).sort()];
+  const colors = Array.from(colorsSet).sort();
+  // Localizações dinâmicas vindas dos produtos
+  const locations = Array.from(locationsSet).sort();
 
-  const transmissions = ["Manual", "Automática", "CVT", "Semi-automática"];
-  const colors = ["Branco", "Preto", "Prata", "Cinza", "Azul", "Vermelho", "Verde", "Amarelo", "Marrom"];
+  const transmissions = ["Manual", "Automática", "Semi-automática"];
   const fuelTypes = ["Gasolina", "Diesel"];
-  const locations = ["Maputo", "Matola", "Beira", "Nampula", "Chimoio", "Nacala", "Quelimane", "Tete", "Xai-Xai", "Lichinga"];
 
   // Salva o id da categoria selecionada (ou 0 para "Todos")
   const selectedCategoryId =
@@ -136,19 +147,21 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
           <div className="space-y-2">
             <Label>Marca</Label>
             <Select
-              value={filters.brand === "" ? "Todos" : filters.brand}
-              onValueChange={(brand) => updateFilters({ brand: brand === "Todos" ? "" : brand })}
+              value={filters.brand === "" ? "all" : filters.brand}
+              onValueChange={(value) => updateFilters({ brand: value === "all" ? "" : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todas as marcas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Todos">Todas as marcas</SelectItem>
-                {brands.filter(b => b !== "Todos").map((brand) => (
-                  <SelectItem key={brand} value={brand}>
-                    {brand}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">Todas as marcas</SelectItem>
+                {brands
+                  .filter(brand => !!brand && brand !== "Todos")
+                  .map((brand) => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -231,12 +244,15 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
             {/* Transmission */}
             <div className="space-y-2">
               <Label>Transmissão</Label>
-              <Select value={filters.transmission} onValueChange={(transmission) => updateFilters({ transmission })}>
+              <Select
+                value={filters.transmission === "" ? "all" : filters.transmission}
+                onValueChange={(value) => updateFilters({ transmission: value === "all" ? "" : value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer transmissão" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Qualquer transmissão</SelectItem>
+                  <SelectItem value="all">Qualquer transmissão</SelectItem>
                   {transmissions.map((transmission) => (
                     <SelectItem key={transmission} value={transmission}>
                       {transmission}
@@ -245,16 +261,18 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
                 </SelectContent>
               </Select>
             </div>
-
             {/* Color */}
             <div className="space-y-2">
               <Label>Cor</Label>
-              <Select value={filters.color} onValueChange={(color) => updateFilters({ color })}>
+              <Select
+                value={filters.color === "" ? "all" : filters.color}
+                onValueChange={(value) => updateFilters({ color: value === "all" ? "" : value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer cor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Qualquer cor</SelectItem>
+                  <SelectItem value="all">Qualquer cor</SelectItem>
                   {colors.filter(c => c !== "").map((color) => (
                     <SelectItem key={color} value={color}>
                       {color}
@@ -263,16 +281,18 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
                 </SelectContent>
               </Select>
             </div>
-
             {/* Fuel Type */}
             <div className="space-y-2">
               <Label>Combustível</Label>
-              <Select value={filters.fuelType} onValueChange={(fuelType) => updateFilters({ fuelType })}>
+              <Select
+                value={filters.fuelType === "" ? "all" : filters.fuelType}
+                onValueChange={(value) => updateFilters({ fuelType: value === "all" ? "" : value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer combustível" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Qualquer combustível</SelectItem>
+                  <SelectItem value="all">Qualquer combustível</SelectItem>
                   {fuelTypes.filter(f => f !== "").map((fuel) => (
                     <SelectItem key={fuel} value={fuel}>
                       {fuel}
@@ -281,21 +301,25 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
                 </SelectContent>
               </Select>
             </div>
-
             {/* Location */}
             <div className="space-y-2">
               <Label>Localização</Label>
-              <Select value={filters.location} onValueChange={(location) => updateFilters({ location })}>
+              <Select
+                value={filters.location === "" ? "all" : filters.location}
+                onValueChange={(value) => updateFilters({ location: value === "all" ? "" : value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer localização" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Qualquer localização</SelectItem>
-                  {locations.filter(l => l !== "").map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all">Qualquer localização</SelectItem>
+                  {locations
+                    .filter(l => !!l && l.trim() !== "")
+                    .map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -303,7 +327,7 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
             <Separator />
 
             {/* Optional Features */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <Label>Opcionais</Label>
               
               <div className="flex items-center space-x-2">
@@ -331,7 +355,7 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
                   Direção Hidráulica
                 </Label>
               </div>
-            </div>
+            </div> */}
           </div>
         )}
 
