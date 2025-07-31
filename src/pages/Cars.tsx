@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -6,7 +6,8 @@ import CarCard from "@/components/CarCard";
 import AdvancedCarFilters from "@/components/AdvancedCarFilters";
 import CarComparison from "@/components/CarComparison";
 import InventoryStats from "@/components/InventoryStats";
-import { cars, Car } from "@/data/cars";
+import { Car } from "@/services/api";
+import { useCars } from "@/hooks/useApi"; // <-- use API hook
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatPrice } from "@/lib/mozambique-utils";
 import { 
   ChevronRight, 
+  ChevronLeft,
   Grid3x3, 
   List, 
   SlidersHorizontal, 
@@ -26,7 +28,10 @@ import {
   Filter,
   GitCompare,
   Map,
-  TrendingUp
+  TrendingUp,
+  Play,
+  Pause,
+  Maximize2
 } from "lucide-react";
 
 export interface ExtendedFilterState {
@@ -52,10 +57,10 @@ const Cars = () => {
   const [filters, setFilters] = useState<ExtendedFilterState>({
     search: "",
     category: "Todos",
-    priceRange: [0, 500000],
-    yearRange: [2015, 2024],
+    priceRange: [0, 5000000],
+    yearRange: [1975, 2025], // <-- Corrigido aqui
     brand: "",
-    mileageRange: [0, 200000],
+    mileageRange: [0, 2000000],
     transmission: "",
     color: "",
     fuelType: "",
@@ -75,20 +80,75 @@ const Cars = () => {
   const [selectedCars, setSelectedCars] = useState<string[]>([]);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [autoPlayEnabled, setAutoPlayEnabled] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  // Filtrar carros
+  // Use API data instead of mock
+  const { data: carsData, loading: carsLoading, error: carsError } = useCars({
+    search: filters.search || undefined,
+    price_min: filters.priceRange[0],
+    price_max: filters.priceRange[1],
+    year_min: filters.yearRange[0],
+    year_max: filters.yearRange[1],
+    make: filters.brand && filters.brand !== "Todos" ? filters.brand : undefined,
+    // Add more filters as needed
+  });
+
+  // Normalize images for all cars (API or fallback)
+  const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80";
+  const FALLBACK_CAR_IMAGE = {
+    id: -1,
+    image: FALLBACK_IMAGE,
+    image_url: FALLBACK_IMAGE,
+    alt_text: "Imagem não disponível",
+    is_primary: true,
+  };
+
+  const cars: Car[] = (carsData || []).map(car => {
+    let images = [];
+    if (Array.isArray(car.images) && car.images.length > 0) {
+      images = car.images.map(img => ({
+        ...img,
+        image: img.image_url || img.image,
+      }));
+    } else if (car.primary_image) {
+      images = [{
+        ...FALLBACK_CAR_IMAGE,
+        image: car.primary_image,
+        image_url: car.primary_image,
+        is_primary: true,
+      }];
+    } else {
+      images = [FALLBACK_CAR_IMAGE];
+    }
+    return {
+      ...car,
+      images,
+      primary_image: car.primary_image || images[0]?.image || FALLBACK_IMAGE,
+    };
+  });
+  
+  // Filtros iguais ao Index.tsx (ajuste para comparar corretamente categoria e marca)
   const filteredCars = useMemo(() => {
     return cars.filter(car => {
       const matchesSearch = filters.search === "" || 
-        car.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        car.brand.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesCategory = filters.category === "Todos" || car.category === filters.category;
-      const matchesBrand = filters.brand === "" || filters.brand === "Todos" || car.brand === filters.brand;
+        (car.name && car.name.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (car.brand && car.brand.toLowerCase().includes(filters.search.toLowerCase()));
+
+      // Corrigido: compara categoria pelo nome, não pelo objeto inteiro
+      const matchesCategory = filters.category === "Todos" || 
+        (car.category && car.category.name === filters.category);
+
+      // Corrigido: compara marca pelo nome, não pelo objeto inteiro
+      const matchesBrand = filters.brand === "" || filters.brand === "Todos" || 
+        (car.brand && car.brand === filters.brand);
+
       const matchesPrice = car.price >= filters.priceRange[0] && car.price <= filters.priceRange[1];
       const matchesYear = car.year >= filters.yearRange[0] && car.year <= filters.yearRange[1];
-      const matchesMileage = car.mileage >= filters.mileageRange[0] && car.mileage <= filters.mileageRange[1];
-      
+      const matchesMileage = (car.mileage ?? 0) >= filters.mileageRange[0] && (car.mileage ?? 0) <= filters.mileageRange[1];
+
       const matchesTransmission = filters.transmission === "" || car.transmission === filters.transmission;
       const matchesColor = filters.color === "" || car.color === filters.color;
       const matchesFuel = filters.fuelType === "" || car.fuel === filters.fuelType;
@@ -129,6 +189,7 @@ const Cars = () => {
 
   const handleViewDetails = (car: Car) => {
     setSelectedCar(car);
+    setCurrentImageIndex(0); // Reset to first image
     setShowDialog(true);
   };
 
@@ -140,6 +201,92 @@ const Cars = () => {
     );
   };
 
+  const nextImage = () => {
+    if (selectedCar && selectedCar.images) {
+      setCurrentImageIndex(prev => 
+        prev === selectedCar.images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const prevImage = () => {
+    if (selectedCar && selectedCar.images) {
+      setCurrentImageIndex(prev => 
+        prev === 0 ? selectedCar.images.length - 1 : prev - 1
+      );
+    }
+  };
+
+  const goToImage = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
+  // Keyboard navigation for image carousel
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!showDialog || !selectedCar) return;
+      
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          prevImage();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          nextImage();
+          break;
+        case 'Escape':
+          setShowDialog(false);
+          break;
+      }
+    };
+
+    if (showDialog) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showDialog, selectedCar, currentImageIndex]);
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (!autoPlayEnabled || !showDialog || !selectedCar || selectedCar.images.length <= 1) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      nextImage();
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [autoPlayEnabled, showDialog, selectedCar, currentImageIndex]);
+
+  // Touch handlers for mobile swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      nextImage();
+    } else if (isRightSwipe) {
+      prevImage();
+    }
+  };
+
   const formatMileage = (mileage: number) => {
     return `${(mileage / 1000).toFixed(0)}k km`;
   };
@@ -149,7 +296,7 @@ const Cars = () => {
       search: "",
       category: "Todos",
       priceRange: [0, 500000],
-      yearRange: [2015, 2024],
+      yearRange: [1975, 2025], // <-- Corrigido aqui também
       brand: "",
       mileageRange: [0, 200000],
       transmission: "",
@@ -228,7 +375,25 @@ const Cars = () => {
       {showStats && (
         <section className="border-b bg-card">
           <div className="container mx-auto px-4 py-6">
-            <InventoryStats cars={cars} />
+            {/* Corrigido: converte para o tipo esperado por InventoryStats (category como string, images como string[]) */}
+            <InventoryStats cars={cars.map(car => ({
+              ...car,
+              id: String(car.id),
+              mileage: car.mileage ?? 0,
+              location: car.location ?? "",
+              images: Array.isArray(car.images)
+                ? car.images.map(img =>
+                    typeof img === "string"
+                      ? img
+                      : (img.image_url || img.image || "")
+                  )
+                : [],
+              category: typeof car.category === "object" && car.category !== null && "name" in car.category
+                ? car.category.name
+                : typeof car.category === "string"
+                  ? car.category
+                  : "",
+            }))} />
           </div>
         </section>
       )}
@@ -333,8 +498,8 @@ const Cars = () => {
                         <div className="absolute top-3 right-3">
                           <input
                             type="checkbox"
-                            checked={selectedCars.includes(car.id)}
-                            onChange={() => handleSelectCar(car.id)}
+                            checked={selectedCars.includes(String(car.id))}
+                            onChange={() => handleSelectCar(String(car.id))}
                             className="w-4 h-4 text-primary bg-white border-gray-300 rounded focus:ring-primary focus:ring-2"
                           />
                         </div>
@@ -398,7 +563,24 @@ const Cars = () => {
       {selectedCars.length > 0 && (
         <CarComparison
           selectedCarIds={selectedCars}
-          cars={cars}
+          cars={cars.map(car => ({
+            ...car,
+            id: String(car.id),
+            mileage: car.mileage ?? 0,
+            location: car.location ?? "",
+            images: Array.isArray(car.images)
+              ? car.images.map(img =>
+                  typeof img === "string"
+                    ? img
+                    : (img.image_url || img.image || "")
+                )
+              : [],
+            category: typeof car.category === "object" && car.category !== null && "name" in car.category
+              ? car.category.name
+              : typeof car.category === "string"
+                ? car.category
+                : "",
+          }))}
           onRemoveCar={handleSelectCar}
           onClearAll={() => setSelectedCars([])}
         />
@@ -417,11 +599,111 @@ const Cars = () => {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <img
-                    src={selectedCar.images[0]}
-                    alt={selectedCar.name}
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
+                  {/* Image Carousel */}
+                  <div className="relative">
+                    <div className="relative w-full h-64 overflow-hidden rounded-lg">
+                      <img
+                        src={selectedCar.images[currentImageIndex].image}
+                        alt={`${selectedCar.name} - Imagem ${currentImageIndex + 1}`}
+                        className="w-full h-full object-cover transition-all duration-300 select-none"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        draggable={false}
+                      />
+                      
+                      {/* Navigation Arrows */}
+                      {selectedCar.images.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevImage}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200 backdrop-blur-sm"
+                            aria-label="Imagem anterior"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={nextImage}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200 backdrop-blur-sm"
+                            aria-label="Próxima imagem"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Image Counter & Controls */}
+                      {selectedCar.images.length > 1 && (
+                        <div className="absolute top-3 right-3 flex items-center gap-2">
+                          <div className="bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                            {currentImageIndex + 1} / {selectedCar.images.length}
+                          </div>
+                          <button
+                            onClick={() => setAutoPlayEnabled(!autoPlayEnabled)}
+                            className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200 backdrop-blur-sm"
+                            aria-label={autoPlayEnabled ? "Pausar auto-play" : "Iniciar auto-play"}
+                          >
+                            {autoPlayEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Thumbnail Navigation */}
+                    {selectedCar.images.length > 1 && (
+                      <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                        {selectedCar.images.map((image, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToImage(index)}
+                            className={`flex-shrink-0 w-16 h-12 rounded border-2 overflow-hidden transition-all duration-200 ${
+                              index === currentImageIndex 
+                                ? 'border-primary shadow-md' 
+                                : 'border-muted hover:border-primary/50'
+                            }`}
+                          >
+                            <img
+                              src={image.image}
+                              alt={`${selectedCar.name} - Thumbnail ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Dots Indicator */}
+                    {selectedCar.images.length > 1 && selectedCar.images.length <= 5 && (
+                      <div className="flex justify-center gap-2 mt-3">
+                        {selectedCar.images.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToImage(index)}
+                            className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                              index === currentImageIndex 
+                                ? 'bg-primary' 
+                                : 'bg-muted hover:bg-primary/50'
+                            }`}
+                            aria-label={`Ir para imagem ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Help text for mobile users */}
+                    {selectedCar.images.length > 1 && (
+                      <p className="text-xs text-muted-foreground text-center mt-2 md:hidden">
+                        Deslize para navegar • Toque nos botões para controlar
+                      </p>
+                    )}
+                    
+                    {/* Help text for desktop users */}
+                    {selectedCar.images.length > 1 && (
+                      <p className="text-xs text-muted-foreground text-center mt-2 hidden md:block">
+                        Use as setas ← → para navegar • ESC para fechar
+                      </p>
+                    )}
+                  </div>
                   
                   <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
@@ -458,7 +740,7 @@ const Cars = () => {
                 <div>
                   <div className="mb-4">
                     <Badge variant="secondary" className="mb-2">
-                      {selectedCar.category}
+                      {selectedCar.category.name}
                     </Badge>
                     <h3 className="text-lg font-semibold text-muted-foreground">
                       {selectedCar.brand}

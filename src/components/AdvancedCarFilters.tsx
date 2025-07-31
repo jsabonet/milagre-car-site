@@ -22,10 +22,10 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const brands = ["Todos", "Honda", "Toyota", "Volkswagen", "Hyundai", "Jeep", "Chevrolet", "Ford", "Fiat", "BMW", "Mercedes", "Audi"];
-  const transmissions = ["", "Manual", "Automática", "CVT", "Semi-automática"];
-  const colors = ["", "Branco", "Preto", "Prata", "Cinza", "Azul", "Vermelho", "Verde", "Amarelo", "Marrom"];
-  const fuelTypes = ["", "Gasolina", "Diesel"];
-  const locations = ["", "Maputo", "Matola", "Beira", "Nampula", "Chimoio", "Nacala", "Quelimane", "Tete", "Xai-Xai", "Lichinga"];
+  const transmissions = ["Manual", "Automática", "CVT", "Semi-automática"];
+  const colors = ["Branco", "Preto", "Prata", "Cinza", "Azul", "Vermelho", "Verde", "Amarelo", "Marrom"];
+  const fuelTypes = ["Gasolina", "Diesel"];
+  const locations = ["Maputo", "Matola", "Beira", "Nampula", "Chimoio", "Nacala", "Quelimane", "Tete", "Xai-Xai", "Lichinga"];
 
   const updateFilters = (newFilters: Partial<ExtendedFilterState>) => {
     const updatedFilters = { ...filters, ...newFilters };
@@ -42,8 +42,8 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
     if (filters.category !== "Todos") count++;
     if (filters.brand !== "" && filters.brand !== "Todos") count++;
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 500000) count++;
-    if (filters.yearRange[0] > 2015 || filters.yearRange[1] < 2024) count++;
-    if (filters.mileageRange[0] > 0 || filters.mileageRange[1] < 200000) count++;
+    if (filters.yearRange[0] > 1975 || filters.yearRange[1] < 2025) count++;
+    if (filters.mileageRange[0] > 0 || filters.mileageRange[1] < 2000000) count++;
     if (filters.transmission !== "") count++;
     if (filters.color !== "") count++;
     if (filters.fuelType !== "") count++;
@@ -106,14 +106,15 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
           {/* Brand */}
           <div className="space-y-2">
             <Label>Marca</Label>
-            <Select value={filters.brand} onValueChange={(brand) => updateFilters({ brand })}>
+            <Select value={filters.brand === "" ? "Todos" : filters.brand} onValueChange={(brand) => updateFilters({ brand: brand === "Todos" ? "" : brand })}>
               <SelectTrigger>
                 <SelectValue placeholder="Todas as marcas" />
               </SelectTrigger>
               <SelectContent>
-                {brands.map((brand) => (
+                <SelectItem value="Todos">Todas as marcas</SelectItem>
+                {brands.filter(b => b !== "Todos").map((brand) => (
                   <SelectItem key={brand} value={brand}>
-                    {brand === "Todos" ? "Todas as marcas" : brand}
+                    {brand}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -149,8 +150,8 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
             <Slider
               value={filters.yearRange}
               onValueChange={(value) => updateFilters({ yearRange: value as [number, number] })}
-              max={2024}
-              min={2015}
+              max={2025}
+              min={1975}
               step={1}
               className="w-full"
             />
@@ -188,9 +189,9 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
               <Slider
                 value={filters.mileageRange}
                 onValueChange={(value) => updateFilters({ mileageRange: value as [number, number] })}
-                max={200000}
+                max={2000000}
                 min={0}
-                step={5000}
+                step={50000}
                 className="w-full"
               />
             </div>
@@ -204,7 +205,7 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Qualquer transmissão</SelectItem>
-                  {transmissions.filter(t => t !== "").map((transmission) => (
+                  {transmissions.map((transmission) => (
                     <SelectItem key={transmission} value={transmission}>
                       {transmission}
                     </SelectItem>

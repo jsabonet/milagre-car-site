@@ -23,13 +23,15 @@ class CarListSerializer(serializers.ModelSerializer):
     make = serializers.CharField(source='brand', read_only=True)
     model = serializers.CharField(source='name', read_only=True)
     fuel_type = serializers.CharField(source='fuel', read_only=True)
+    images = CarImageSerializer(many=True, read_only=True)  # <-- ADICIONE ESTA LINHA
     
     class Meta:
         model = Car
         fields = [
             'id', 'make', 'model', 'brand', 'name', 'year', 'price', 'formatted_price',
             'fuel_type', 'fuel', 'transmission', 'category', 'primary_image',
-            'mileage', 'color', 'location', 'description', 'featured', 'created_at'
+            'mileage', 'color', 'location', 'description', 'featured', 'created_at',
+            'images'  # <-- ADICIONE ESTE CAMPO
         ]
     
     def get_primary_image(self, obj):

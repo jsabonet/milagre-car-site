@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Calendar, Fuel, Gauge, MapPin, Edit, Trash2 } from 'lucide-react';
 import { useCar } from '@/hooks/useApi';
-import CarImageUpload from '@/components/CarImageUpload';
 import CarImageGallery from '@/components/CarImageGallery';
 import { formatPrice } from '@/lib/mozambique-utils';
 import Header from '@/components/Header';
@@ -17,13 +16,7 @@ const CarDetails = () => {
   const navigate = useNavigate();
   const carId = id ? parseInt(id) : 0;
   
-  const { data: car, loading, error, refetch } = useCar(carId);
-  const [images, setImages] = useState(car?.images || []);
-
-  const handleImagesUpdated = (newImages: any[]) => {
-    setImages(newImages);
-    refetch(); // Recarregar dados do carro
-  };
+  const { data: car, loading, error } = useCar(carId);
 
   if (loading) {
     return (
@@ -161,9 +154,8 @@ const CarDetails = () => {
             </Card>
           </div>
 
-          {/* Image Gallery and Management */}
+          {/* Car Image Gallery */}
           <div className="space-y-6">
-            {/* Car Image Gallery */}
             <Card>
               <CardHeader>
                 <CardTitle>Galeria de Imagens</CardTitle>
@@ -175,23 +167,9 @@ const CarDetails = () => {
                 />
               </CardContent>
             </Card>
-
-            {/* Image Management for Admins */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar Imagens</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CarImageUpload
-                  carId={carId}
-                  existingImages={car.images}
-                  onImagesUpdated={handleImagesUpdated}
-                  maxFiles={10}
-                  maxSize={5}
-                />
-              </CardContent>
-            </Card>
           </div>
+
+
         </div>
       </div>
 

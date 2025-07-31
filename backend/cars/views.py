@@ -162,30 +162,43 @@ class CarViewSet(viewsets.ModelViewSet):
         """Adicionar imagens ao carro"""
         car = self.get_object()
         images = request.FILES.getlist('images')
-        
+
         if not images:
             return Response(
                 {'error': 'Nenhuma imagem fornecida'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         created_images = []
         existing_images_count = car.images.count()
-        
+
+        # Buscar alt_texts enviados pelo frontend
+        alt_texts = []
+        for idx in range(len(images)):
+            alt_text = request.data.get(f'alt_text_{idx}', '')
+            alt_texts.append(alt_text)
+
+        # Verificar se alguma imagem deve ser marcada como primária
+        is_primary_flag = request.data.get('is_primary', None)
         for index, image in enumerate(images):
-            # Se é a primeira imagem do carro, marca como primária
-            is_primary = existing_images_count == 0 and index == 0
-            
+            is_primary = False
+            if is_primary_flag == 'true' or is_primary_flag is True:
+                is_primary = (index == 0)
+            elif existing_images_count == 0 and index == 0:
+                is_primary = True
+
+            alt_text = alt_texts[index] if index < len(alt_texts) else ''
+
             car_image = CarImage.objects.create(
                 car=car,
                 image=image,
                 is_primary=is_primary,
-                alt_text=f"{car.brand} {car.name} - Imagem {existing_images_count + index + 1}"
+                alt_text=alt_text or f"{car.brand} {car.name} - Imagem {existing_images_count + index + 1}"
             )
             created_images.append(car_image)
-        
+
         serializer = CarImageSerializer(created_images, many=True, context={'request': request})
-        
+
         return Response({
             'message': f'{len(created_images)} imagens adicionadas com sucesso',
             'images': serializer.data
@@ -260,3 +273,4 @@ class CarViewSet(viewsets.ModelViewSet):
                 {'error': 'Imagem não encontrada'},
                 status=status.HTTP_404_NOT_FOUND
             )
+            

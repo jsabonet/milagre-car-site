@@ -7,6 +7,7 @@ import { CarImage } from '@/services/api';
 
 interface CarImageGalleryProps {
   images: CarImage[];
+  carName?: string;
   className?: string;
   showThumbnails?: boolean;
   autoplay?: boolean;
@@ -15,6 +16,7 @@ interface CarImageGalleryProps {
 
 const CarImageGallery: React.FC<CarImageGalleryProps> = ({
   images,
+  carName = '',
   className = '',
   showThumbnails = true,
   autoplay = false,
@@ -75,7 +77,7 @@ const CarImageGallery: React.FC<CarImageGalleryProps> = ({
           <div className="relative aspect-video bg-muted">
             <img
               src={currentImage.image_url || currentImage.image}
-              alt={currentImage.alt_text}
+              alt={currentImage.alt_text || carName || 'Imagem do carro'}
               className="w-full h-full object-cover"
             />
 
@@ -142,7 +144,7 @@ const CarImageGallery: React.FC<CarImageGalleryProps> = ({
                   >
                     <img
                       src={image.image_url || image.image}
-                      alt={image.alt_text}
+                      alt={image.alt_text || carName || 'Imagem do carro'}
                       className="w-full h-full object-cover"
                     />
                     {image.is_primary && (
@@ -164,7 +166,7 @@ const CarImageGallery: React.FC<CarImageGalleryProps> = ({
           <div className="relative max-w-6xl max-h-full">
             <img
               src={currentImage.image_url || currentImage.image}
-              alt={currentImage.alt_text}
+              alt={currentImage.alt_text || carName || 'Imagem do carro'}
               className="max-w-full max-h-full object-contain"
             />
             

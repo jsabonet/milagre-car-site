@@ -20,10 +20,14 @@ const CarCard = ({ car, onViewDetails, viewMode = 'grid' }: CarCardProps) => {
     return `${(mileage / 1000).toFixed(0)}k km`;
   };
 
-  const availableImages = car.images && car.images.length > 0 
-    ? car.images 
-    : [{ 
-        id: 0, 
+  // Corrigido: sempre prioriza imagens secundárias (array de objetos), mas usa primary_image se não houver
+  const availableImages = Array.isArray(car.images) && car.images.length > 0
+    ? car.images.map(img => ({
+        ...img,
+        image: img.image_url || img.image,
+      }))
+    : [{
+        id: 0,
         image: car.primary_image || "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80",
         image_url: car.primary_image || "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80",
         alt_text: `${car.make} ${car.model}`,

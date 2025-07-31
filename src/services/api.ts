@@ -93,7 +93,19 @@ class ApiService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return await response.json();
+      // Check if response has content (status 204 No Content returns empty body)
+      if (response.status === 204 || response.headers.get('content-length') === '0') {
+        return {} as T;
+      }
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      
+      // For non-JSON responses, return empty object
+      return {} as T;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -103,7 +115,6 @@ class ApiService {
   // Métodos para Cars
   async getCars(filters?: CarFilters): Promise<ApiResponse<Car>> {
     const params = new URLSearchParams();
-    
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -111,10 +122,8 @@ class ApiService {
         }
       });
     }
-    
     const queryString = params.toString();
     const endpoint = queryString ? `/cars/?${queryString}` : '/cars/';
-    
     return this.makeRequest<ApiResponse<Car>>(endpoint);
   }
 
@@ -137,9 +146,10 @@ class ApiService {
   }
 
   async deleteCar(id: number): Promise<void> {
-    await this.makeRequest(`/cars/${id}/`, {
+    await this.makeRequest<void>(`/cars/${id}/`, {
       method: 'DELETE',
     });
+    // Delete operations typically return 204 No Content, so no return value needed
   }
 
   async getFeaturedCars(): Promise<Car[]> {
@@ -218,9 +228,10 @@ class ApiService {
   }
 
   async deleteCategory(id: number): Promise<void> {
-    await this.makeRequest(`/categories/${id}/`, {
+    await this.makeRequest<void>(`/categories/${id}/`, {
       method: 'DELETE',
     });
+    // Delete operations typically return 204 No Content, so no return value needed
   }
 
   async getCategoryStats(): Promise<{

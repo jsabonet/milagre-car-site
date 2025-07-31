@@ -15,7 +15,9 @@ import { formatPrice } from "@/lib/mozambique-utils";
 import { useCars, useCategories, useCreateCar, useUpdateCar, useDeleteCar, useCreateCategory, useDeleteCategory } from "@/hooks/useApi";
 import { Car, apiService } from "@/services/api";
 import CarImageUpload from "@/components/CarImageUpload";
+import PrimaryImageUpload from "@/components/PrimaryImageUpload";
 import CarImageGallery from "@/components/CarImageGallery";
+import SecondaryImagesUpload from "@/components/SecondaryImagesUpload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Admin = () => {
@@ -52,7 +54,9 @@ const Admin = () => {
     featured: false
   });
 
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]); // Secundárias
+  const [primaryImage, setPrimaryImage] = useState<File | null>(null);
+  const [primaryImagePreview, setPrimaryImagePreview] = useState<string | null>(null);
 
   const [newCategory, setNewCategory] = useState("");
 
@@ -96,10 +100,10 @@ const Admin = () => {
   };
 
   const handleAddCar = async () => {
-    if (!newCar.model || !newCar.make || !newCar.price) {
+    if (!newCar.model || !newCar.make || !newCar.price || !primaryImage) {
       toast({
         title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
+        description: !primaryImage ? "A imagem principal é obrigatória" : "Preencha todos os campos obrigatórios",
         variant: "destructive"
       });
       return;
@@ -153,27 +157,44 @@ const Admin = () => {
         category: newCar.category ? Number(newCar.category) : undefined,
       };
 
-      // First, create the car
+      // Primeiro, cria o carro
       const createdCar = await createCarMutation.mutateAsync(cleanCarData);
-      
-      // Upload images if any were selected
-      if (selectedImages.length > 0 && createdCar) {
+      // Upload da imagem principal
+      if (primaryImage && createdCar) {
         const formData = new FormData();
-        selectedImages.forEach((file, index) => {
-          formData.append('images', file);
-          formData.append(`alt_text_${index}`, `${newCar.make} ${newCar.model} - Imagem ${index + 1}`);
-        });
-        
+        formData.append('images', primaryImage); // <-- Corrigido para 'images'
+        formData.append('is_primary', 'true');
+        formData.append('alt_text_0', `${newCar.make} ${newCar.model} - Capa`);
         try {
           await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
             method: 'POST',
             body: formData,
           });
         } catch (imageError) {
-          console.error('Error uploading secondary images:', imageError);
+          console.error('Erro ao fazer upload da imagem principal:', imageError);
           toast({
             title: "Aviso",
-            description: "Carro criado, mas houve erro no upload das imagens secundárias. Você pode adicionar as imagens depois.",
+            description: "Carro criado, mas houve erro no upload da imagem principal. Você pode adicionar depois.",
+          });
+        }
+      }
+      // Upload das imagens secundárias
+      if (selectedImages.length > 0 && createdCar) {
+        const formData = new FormData();
+        selectedImages.forEach((file, index) => {
+          formData.append('images', file);
+          formData.append(`alt_text_${index}`, `${newCar.make} ${newCar.model} - Imagem ${index + 1}`);
+        });
+        try {
+          await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
+            method: 'POST',
+            body: formData,
+          });
+        } catch (imageError) {
+          console.error('Erro ao fazer upload das imagens secundárias:', imageError);
+          toast({
+            title: "Aviso",
+            description: "Carro criado, mas houve erro no upload das imagens secundárias. Você pode adicionar depois.",
           });
         }
       }
@@ -207,11 +228,49 @@ const Admin = () => {
 
     try {
       await updateCarMutation.mutateAsync({ id: editingCar.id, data: newCar });
+      // Se uma nova imagem principal foi selecionada, faz upload dela
+      if (primaryImage) {
+        const formData = new FormData();
+        formData.append('images', primaryImage); // <-- Corrigido para 'images'
+        formData.append('is_primary', 'true');
+        formData.append('alt_text_0', `${newCar.make} ${newCar.model} - Capa`);
+        try {
+          await fetch(`http://127.0.0.1:8000/api/cars/${editingCar.id}/add_images/`, {
+            method: 'POST',
+            body: formData,
+          });
+        } catch (imageError) {
+          console.error('Erro ao atualizar imagem principal:', imageError);
+          toast({
+            title: "Aviso",
+            description: "Carro atualizado, mas houve erro ao atualizar a imagem principal.",
+          });
+        }
+      }
+      // Se houver imagens secundárias novas, faz upload delas
+      if (selectedImages.length > 0) {
+        const formData = new FormData();
+        selectedImages.forEach((file, index) => {
+          formData.append('images', file);
+          formData.append(`alt_text_${index}`, `${newCar.make} ${newCar.model} - Imagem ${index + 1}`);
+        });
+        try {
+          await fetch(`http://127.0.0.1:8000/api/cars/${editingCar.id}/add_images/`, {
+            method: 'POST',
+            body: formData,
+          });
+        } catch (imageError) {
+          console.error('Erro ao fazer upload das imagens secundárias:', imageError);
+          toast({
+            title: "Aviso",
+            description: "Carro atualizado, mas houve erro ao enviar imagens secundárias.",
+          });
+        }
+      }
       toast({
         title: "Sucesso",
         description: "Carro atualizado com sucesso!",
       });
-
       resetForm();
       setEditingCar(null);
       setIsAddingCar(false);
@@ -260,6 +319,7 @@ const Admin = () => {
       featured: false
     });
     setSelectedImages([]);
+    setPrimaryImage(null);
   };
 
   const handleAddCategory = async () => {
@@ -325,7 +385,7 @@ const Admin = () => {
   };
 
   const handleEditCar = (car: Car) => {
-    setEditingCar(car);
+    setEditingCar(car); // car deve conter o array images vindo do backend
     setNewCar({
       model: car.model,
       make: car.make,
@@ -340,6 +400,10 @@ const Admin = () => {
       color: car.color || "",
       featured: car.featured
     });
+    // Definir preview da imagem principal existente
+    const principal = car.images?.find(img => img.is_primary) || (car.primary_image ? { image: car.primary_image } : null);
+    setPrimaryImage(null);
+    setPrimaryImagePreview(principal?.image || null);
     setIsAddingCar(true);
   };
 
@@ -393,6 +457,36 @@ const Admin = () => {
     });
   };
 
+  // Adicione esta função dentro do componente Admin
+  const handleRemoveExistingImage = async (imageId: number) => {
+    if (!editingCar) return;
+    try {
+      // Chama a API para remover a imagem
+      await fetch(`http://127.0.0.1:8000/api/cars/${editingCar.id}/remove_image/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image_id: imageId }),
+      });
+      // Atualiza o estado local removendo a imagem
+      setEditingCar({
+        ...editingCar,
+        images: editingCar.images.filter(img => img.id !== imageId),
+      });
+      toast({
+        title: "Sucesso",
+        description: "Imagem removida com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao remover imagem",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -408,7 +502,7 @@ const Admin = () => {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Painel Administrativo</h1>
-                <p className="text-muted-foreground">MILAGRE CAR COMÉRCIO</p>
+                <p className="text-muted-foreground">MILAGRE CAR & COMÉRCIO</p>
               </div>
             </div>
           </div>
@@ -597,162 +691,43 @@ const Admin = () => {
                       />
                     </div>
                     
-                    {/* Upload de Imagens - só mostra se não estiver editando */}
-                    {!editingCar && (
-                      <div className="md:col-span-2">
-                        <Label htmlFor="images">Imagens do Veículo</Label>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-center w-full">
-                            <label htmlFor="images" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <Images className="w-8 h-8 mb-4 text-gray-500" />
-                                <p className="mb-2 text-sm text-gray-500">
-                                  <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                                </p>
-                                <p className="text-xs text-gray-500">PNG, JPG ou WebP (máx. 5MB cada, até 10 imagens)</p>
-                                <p className="text-xs text-primary font-medium">💡 Adicione múltiplas imagens para mostrar diferentes ângulos do carro</p>
-                                <p className="text-xs text-blue-600 font-medium">A primeira imagem será definida como principal</p>
-                              </div>
-                              <input
-                                id="images"
-                                name="images"
-                                type="file"
-                                className="hidden"
-                                multiple
-                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                onChange={handleImageSelect}
-                              />
-                            </label>
-                          </div>
-                          
-                          {/* Preview das imagens selecionadas */}
-                          {selectedImages.length > 0 && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {selectedImages.map((file, index) => (
-                                <div key={index} className="relative group">
-                                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                    <img
-                                      src={URL.createObjectURL(file)}
-                                      alt={`Preview ${index + 1}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => removeImage(index)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                  <div className="absolute bottom-2 left-2">
-                                    <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
-                                      {index === 0 ? "Principal" : `Secundária ${index}`}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                     
-                    {/* Preview e gerenciamento de imagens durante edição */}
-                    {editingCar && (
-                      <div className="md:col-span-2 space-y-4">
-                        {/* Galeria de imagens se há múltiplas imagens */}
-                        {editingCar.images && editingCar.images.length > 1 && (
-                          <div>
-                            <Label>Galeria de Imagens ({editingCar.images.length} imagens)</Label>
-                            <div className="mt-2 border rounded-lg overflow-hidden">
-                              <CarImageGallery 
-                                images={editingCar.images} 
-                                carName={`${editingCar.make} ${editingCar.model}`}
-                              />
-                            </div>
-                            <div className="flex justify-center mt-3">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => handleManageImages(editingCar.id)}
-                                className="text-sm"
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Gerenciar Todas as Imagens
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Preview da imagem principal quando há só uma ou nenhuma imagem */}
-                        {(!editingCar.images || editingCar.images.length <= 1) && (
-                          <>
-                            {editingCar.primary_image && (
-                              <div>
-                                <Label>Imagem Principal</Label>
-                                <div className="relative w-48 mt-2 group">
-                                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                    <img
-                                      src={editingCar.primary_image}
-                                      alt={`${editingCar.make} ${editingCar.model}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <Badge className="absolute bottom-2 left-2 bg-primary">
-                                    Principal
-                                  </Badge>
-                                  
-                                  {/* Botões de ação sobre a imagem */}
-                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => handleManageImages(editingCar.id)}
-                                      className="text-xs"
-                                    >
-                                      <Edit className="h-3 w-3 mr-1" />
-                                      Trocar
-                                    </Button>
-                                  </div>
-                                </div>
+                    {/* Upload de Imagem Principal */}
+                    <div className="md:col-span-2 space-y-4">
+                      <PrimaryImageUpload
+                        image={editingCar ? editingCar.images?.find(img => img.is_primary) || null : null}
+                        onImageChange={setPrimaryImage}
+                        previewUrl={editingCar ? primaryImagePreview : null}
+                        disabled={false}
+                      />
+                      <SecondaryImagesUpload
+                        files={selectedImages}
+                        onFilesChange={setSelectedImages}
+                        disabled={false}
+                      />
+                      {/* Preview das imagens secundárias já cadastradas */}
+                      {editingCar?.images && editingCar.images.filter(img => !img.is_primary).length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {editingCar.images
+                            .filter(img => !img.is_primary)
+                            .map((img) => (
+                              <div key={img.id} className="relative w-20 h-20 rounded overflow-hidden border bg-gray-100 flex items-center justify-center">
+                                <img src={img.image_url || img.image} alt={img.alt_text} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  className="absolute top-0 right-0 bg-white/80 rounded-bl px-1 py-0.5"
+                                  onClick={() => handleRemoveExistingImage(img.id)}
+                                  title="Remover imagem"
+                                >
+                                  <span className="text-xs">✕</span>
+                                </button>
                               </div>
-                            )}
-                            
-                            {/* Se não tem imagem principal, mostrar opção de upload */}
-                            {!editingCar.primary_image && (
-                              <div>
-                                <Label>Imagem Principal</Label>
-                                <div className="mt-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleManageImages(editingCar.id)}
-                                    className="w-full h-32 border-2 border-dashed"
-                                  >
-                                    <div className="flex flex-col items-center">
-                                      <Images className="h-8 w-8 mb-2 text-gray-500" />
-                                      <span>Adicionar Imagem Principal</span>
-                                    </div>
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                        
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-700">
-                            <strong>Dica:</strong> {editingCar.images && editingCar.images.length > 1 
-                              ? 'Use "Gerenciar Todas as Imagens" para adicionar, remover ou trocar a imagem principal.'
-                              : 'Clique em "Trocar" na imagem para gerenciar todas as imagens deste carro (trocar principal, adicionar/remover secundárias).'
-                            }
-                          </p>
+                            ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    
+
                     
                     <div className="md:col-span-2">
                       <label htmlFor="featured" className="flex items-center space-x-2">
@@ -867,14 +842,6 @@ const Admin = () => {
                                 title="Ver detalhes"
                               >
                                 <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleManageImages(car.id)}
-                                title="Gerenciar imagens"
-                              >
-                                <Images className="h-4 w-4" />
                               </Button>
                               <Button 
                                 size="sm" 
@@ -1017,24 +984,7 @@ const Admin = () => {
           </div>
         )}
 
-        {/* Image Upload Dialog */}
-        <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Gerenciar Imagens do Carro</DialogTitle>
-            </DialogHeader>
-            
-            {selectedCarForImages && (
-              <CarImageUpload
-                carId={selectedCarForImages}
-                existingImages={cars?.find(car => car.id === selectedCarForImages)?.images || []}
-                onImagesUpdated={handleImagesUpdated}
-                maxFiles={10}
-                maxSize={5}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+
       </div>
     </div>
   );
