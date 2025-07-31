@@ -88,9 +88,16 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Tente ler o corpo da resposta para mostrar o erro detalhado do DRF
+        let errorDetail = '';
+        try {
+          const errorJson = await response.json();
+          errorDetail = JSON.stringify(errorJson);
+        } catch {
+          errorDetail = response.statusText;
+        }
+        throw new Error(`HTTP error! status: ${response.status} - ${errorDetail}`);
       }
       
       // Check if response has content (status 204 No Content returns empty body)

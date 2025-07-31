@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, X, Filter } from "lucide-react";
-import { categories } from "@/data/cars";
+import { useCategories, useCars } from "@/hooks/useApi";
 import { ExtendedFilterState } from "@/pages/Cars";
 import { formatPrice } from "@/lib/mozambique-utils";
 
@@ -21,15 +21,43 @@ interface AdvancedCarFiltersProps {
 const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const brands = ["Todos", "Honda", "Toyota", "Volkswagen", "Hyundai", "Jeep", "Chevrolet", "Ford", "Fiat", "BMW", "Mercedes", "Audi"];
+  // Buscar categorias dinamicamente da API
+  const { data: categoriesData } = useCategories();
+  // Mapeia para { id, name } para uso robusto no filtro
+  const categoriesList = [{ id: 0, name: "Todos" }, ...(categoriesData?.map(cat => ({ id: cat.id, name: cat.name })) || [])];
+
+  // Buscar marcas dinamicamente dos carros cadastrados
+  const { data: carsData } = useCars();
+  const brandsSet = new Set<string>();
+  (carsData || []).forEach(car => {
+    if (car.brand && car.brand.trim() !== "") {
+      brandsSet.add(car.brand.trim());
+    }
+  });
+  const brands = ["Todos", ...Array.from(brandsSet).sort()];
+
   const transmissions = ["Manual", "Automática", "CVT", "Semi-automática"];
   const colors = ["Branco", "Preto", "Prata", "Cinza", "Azul", "Vermelho", "Verde", "Amarelo", "Marrom"];
   const fuelTypes = ["Gasolina", "Diesel"];
   const locations = ["Maputo", "Matola", "Beira", "Nampula", "Chimoio", "Nacala", "Quelimane", "Tete", "Xai-Xai", "Lichinga"];
 
+  // Salva o id da categoria selecionada (ou 0 para "Todos")
+  const selectedCategoryId =
+    filters.category === "Todos"
+      ? 0
+      : categoriesList.find(cat => cat.name === filters.category)?.id || 0;
+
   const updateFilters = (newFilters: Partial<ExtendedFilterState>) => {
-    const updatedFilters = { ...filters, ...newFilters };
-    onFiltersChange(updatedFilters);
+    // Se categoria for alterada, armazene o nome da categoria (igual ao CarFilters)
+    if (newFilters.category !== undefined) {
+      const catObj = categoriesList.find(cat =>
+        (typeof newFilters.category === "number" && cat.id === newFilters.category) ||
+        (typeof newFilters.category === "string" && cat.name === newFilters.category)
+      );
+      onFiltersChange({ ...filters, category: catObj ? catObj.name : "Todos", ...newFilters });
+    } else {
+      onFiltersChange({ ...filters, ...newFilters });
+    }
   };
 
   const formatMileage = (value: number) => {
@@ -86,14 +114,15 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
         <div className="space-y-2">
           <Label>Categoria</Label>
           <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
+            {categoriesList.map((category) => (
               <Button
-                key={category}
-                variant={filters.category === category ? "default" : "outline"}
+                key={category.id}
+                variant={filters.category === category.name ? "default" : "outline"}
                 size="sm"
-                onClick={() => updateFilters({ category })}
+                // Corrigido: sempre armazena o nome da categoria (string) no filtro
+                onClick={() => updateFilters({ category: category.name })}
               >
-                {category}
+                {category.name}
               </Button>
             ))}
           </div>
@@ -106,7 +135,10 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
           {/* Brand */}
           <div className="space-y-2">
             <Label>Marca</Label>
-            <Select value={filters.brand === "" ? "Todos" : filters.brand} onValueChange={(brand) => updateFilters({ brand: brand === "Todos" ? "" : brand })}>
+            <Select
+              value={filters.brand === "" ? "Todos" : filters.brand}
+              onValueChange={(brand) => updateFilters({ brand: brand === "Todos" ? "" : brand })}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Todas as marcas" />
               </SelectTrigger>

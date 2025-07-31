@@ -18,7 +18,7 @@ const PrimaryImageUpload: React.FC<PrimaryImageUploadProps> = ({ image, onImageC
     const file = e.target.files?.[0] || null;
     if (file) {
       setLocalPreview(URL.createObjectURL(file));
-      onImageChange(file);
+      onImageChange(file); // <-- Isso já envia o arquivo para o Admin.tsx
     }
   };
 

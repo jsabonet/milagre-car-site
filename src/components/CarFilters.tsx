@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, X } from "lucide-react";
-import { categories } from "@/data/cars";
+import { useCategories, useCars } from "@/hooks/useApi"; // Importa hooks para categorias e carros
 
 interface CarFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
@@ -29,7 +29,19 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const brands = ["Todos", "Honda", "Toyota", "Volkswagen", "Hyundai", "Jeep", "Chevrolet", "Ford", "Fiat"];
+  // Buscar categorias dinamicamente do backend
+  const { data: categoriesData } = useCategories();
+  const categoriesList = ["Todos", ...(categoriesData?.map(cat => cat.name) || [])];
+
+  // Buscar marcas dinamicamente dos carros cadastrados
+  const { data: carsData } = useCars();
+  const brandsSet = new Set<string>();
+  (carsData || []).forEach(car => {
+    if (car.brand && car.brand.trim() !== "") {
+      brandsSet.add(car.brand.trim());
+    }
+  });
+  const brands = ["Todos", ...Array.from(brandsSet).sort()];
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const updatedFilters = { ...filters, ...newFilters };
@@ -74,7 +86,7 @@ const CarFilters = ({ onFiltersChange }: CarFiltersProps) => {
       {/* Quick Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
+          {categoriesList.map((category) => (
             <Button
               key={category}
               variant={filters.category === category ? "default" : "outline"}

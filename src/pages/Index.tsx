@@ -5,7 +5,7 @@ import HeroSection from "@/components/HeroSection";
 import CarCard from "@/components/CarCard";
 import CarFilters, { FilterState } from "@/components/CarFilters";
 import { Footer } from "@/components/Footer";
-import { useCars, useFeaturedCars } from "@/hooks/useApi";
+import { useCars, useFeaturedCars, useCategories } from "@/hooks/useApi";
 import { Car } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,9 @@ const Index = () => {
   const mainRef = useRef<HTMLDivElement>(null);
   const dialogTitleRef = useRef<HTMLHeadingElement>(null);
 
+  // Buscar categorias do backend para filtro por categoria
+  const { data: categoriesData } = useCategories();
+
   // Buscar carros da API
   const apiFilters = useMemo(() => ({
     search: filters.search || undefined,
@@ -37,7 +40,11 @@ const Index = () => {
     year_min: filters.yearRange[0],
     year_max: filters.yearRange[1],
     make: filters.brand && filters.brand !== "Todos" ? filters.brand : undefined,
-  }), [filters]);
+    // Corrigido: envia o id da categoria se não for "Todos"
+    category: filters.category && filters.category !== "Todos" && categoriesData
+      ? categoriesData.find(cat => cat.name === filters.category)?.id
+      : undefined,
+  }), [filters, categoriesData]);
 
 
   const { data: carsData, loading: carsLoading, error: carsError } = useCars(apiFilters);

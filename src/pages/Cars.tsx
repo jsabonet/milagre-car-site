@@ -138,8 +138,13 @@ const Cars = () => {
         (car.brand && car.brand.toLowerCase().includes(filters.search.toLowerCase()));
 
       // Corrigido: compara categoria pelo nome, não pelo objeto inteiro
+      // ATENÇÃO: se algum carro não tiver category ou category.name, ele será filtrado fora!
       const matchesCategory = filters.category === "Todos" || 
-        (car.category && car.category.name === filters.category);
+        (car.category && (
+          typeof car.category === "string"
+            ? car.category === filters.category
+            : car.category.name === filters.category
+        ));
 
       // Corrigido: compara marca pelo nome, não pelo objeto inteiro
       const matchesBrand = filters.brand === "" || filters.brand === "Todos" || 
@@ -152,6 +157,15 @@ const Cars = () => {
       const matchesTransmission = filters.transmission === "" || car.transmission === filters.transmission;
       const matchesColor = filters.color === "" || car.color === filters.color;
       const matchesFuel = filters.fuelType === "" || car.fuel === filters.fuelType;
+
+      // DEBUG: log para identificar carros filtrados
+      // console.log({
+      //   id: car.id,
+      //   name: car.name,
+      //   category: car.category,
+      //   matchesCategory,
+      //   filtersCategory: filters.category
+      // });
 
       return matchesSearch && matchesCategory && matchesBrand && matchesPrice && 
              matchesYear && matchesMileage && matchesTransmission && matchesColor && matchesFuel;

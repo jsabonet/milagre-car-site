@@ -13,7 +13,11 @@ const SecondaryImagesUpload: React.FC<SecondaryImagesUploadProps> = ({ files, on
 
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
-    onFilesChange([...files, ...newFiles]);
+    // Corrigido: não duplica arquivos já existentes
+    const uniqueFiles = newFiles.filter(
+      file => !files.some(f => f.name === file.name && f.size === file.size)
+    );
+    onFilesChange([...files, ...uniqueFiles]);
   };
 
   const handleRemove = (idx: number) => {

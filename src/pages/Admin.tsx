@@ -154,30 +154,26 @@ const Admin = () => {
         price: Number(newCar.price),
         year: newCar.year ? Number(newCar.year) : undefined,
         mileage: newCar.mileage ? Number(newCar.mileage) : undefined,
+        // Corrija aqui: envie category como número ou undefined
         category: newCar.category ? Number(newCar.category) : undefined,
       };
 
       // Primeiro, cria o carro
       const createdCar = await createCarMutation.mutateAsync(cleanCarData);
+
       // Upload da imagem principal
       if (primaryImage && createdCar) {
         const formData = new FormData();
-        formData.append('images', primaryImage); // <-- Corrigido para 'images'
+        formData.append('images', primaryImage);
         formData.append('is_primary', 'true');
         formData.append('alt_text_0', `${newCar.make} ${newCar.model} - Capa`);
-        try {
-          await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
-            method: 'POST',
-            body: formData,
-          });
-        } catch (imageError) {
-          console.error('Erro ao fazer upload da imagem principal:', imageError);
-          toast({
-            title: "Aviso",
-            description: "Carro criado, mas houve erro no upload da imagem principal. Você pode adicionar depois.",
-          });
-        }
+        // Corrigido: Content-Type deve ser omitido para FormData
+        await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
+          method: 'POST',
+          body: formData,
+        });
       }
+
       // Upload das imagens secundárias
       if (selectedImages.length > 0 && createdCar) {
         const formData = new FormData();
@@ -185,18 +181,11 @@ const Admin = () => {
           formData.append('images', file);
           formData.append(`alt_text_${index}`, `${newCar.make} ${newCar.model} - Imagem ${index + 1}`);
         });
-        try {
-          await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
-            method: 'POST',
-            body: formData,
-          });
-        } catch (imageError) {
-          console.error('Erro ao fazer upload das imagens secundárias:', imageError);
-          toast({
-            title: "Aviso",
-            description: "Carro criado, mas houve erro no upload das imagens secundárias. Você pode adicionar depois.",
-          });
-        }
+        // Não defina is_primary aqui!
+        await fetch(`http://127.0.0.1:8000/api/cars/${createdCar.id}/add_images/`, {
+          method: 'POST',
+          body: formData,
+        });
       }
 
       toast({
