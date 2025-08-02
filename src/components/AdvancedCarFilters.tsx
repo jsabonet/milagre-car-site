@@ -94,21 +94,61 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
 
   const activeFiltersCount = getActiveFiltersCount();
 
+  const clearAllFilters = () => {
+    onFiltersChange({
+      search: "",
+      category: "Todos",
+      priceRange: [0, 50000000],
+      yearRange: [1975, 2025],
+      brand: "",
+      mileageRange: [0, 200000000],
+      transmission: "",
+      color: "",
+      fuelType: "",
+      location: "",
+      hasAirConditioning: false,
+      hasPowerSteering: false
+    });
+  };
+
+  const clearSearchFilter = () => {
+    updateFilters({ search: "" });
+  };
+
+  const clearLocationFilter = () => {
+    updateFilters({ location: "" });
+  };
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader className="px-0 pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Filtros</CardTitle>
-          {activeFiltersCount > 0 && (
-            <Badge variant="secondary">{activeFiltersCount}</Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary">{activeFiltersCount}</Badge>
+            )}
+            {activeFiltersCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="px-0 space-y-6">
         {/* Search */}
         <div className="space-y-2">
-          <Label htmlFor="search">Buscar</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="search">Buscar</Label>
+            {filters.search && (
+              <Button variant="ghost" size="sm" onClick={clearSearchFilter}>
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -145,7 +185,14 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
         <div className="space-y-4">
           {/* Brand */}
           <div className="space-y-2">
-            <Label>Marca</Label>
+            <div className="flex items-center justify-between">
+              <Label>Marca</Label>
+              {filters.brand && filters.brand !== "Todos" && (
+                <Button variant="ghost" size="sm" onClick={() => updateFilters({ brand: "" })}>
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
             <Select
               value={filters.brand === "" ? "all" : filters.brand}
               onValueChange={(value) => updateFilters({ brand: value === "all" ? "" : value })}
@@ -170,16 +217,27 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Faixa de Preço</Label>
-              <span className="text-sm text-muted-foreground">
-                {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
+                </span>
+                {(filters.priceRange[0] > 0 || filters.priceRange[1] < 50000000) && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => updateFilters({ priceRange: [0, 50000000] })}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
             <Slider
               value={filters.priceRange}
               onValueChange={(value) => updateFilters({ priceRange: value as [number, number] })}
-              max={500000}
+              max={50000000}
               min={0}
-              step={5000}
+              step={100000}
               className="w-full"
             />
           </div>
@@ -188,9 +246,20 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Ano</Label>
-              <span className="text-sm text-muted-foreground">
-                {filters.yearRange[0]} - {filters.yearRange[1]}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {filters.yearRange[0]} - {filters.yearRange[1]}
+                </span>
+                {(filters.yearRange[0] > 1975 || filters.yearRange[1] < 2025) && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => updateFilters({ yearRange: [1975, 2025] })}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
             <Slider
               value={filters.yearRange}
@@ -223,87 +292,16 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
         {/* Advanced Filters */}
         {showAdvanced && (
           <div className="space-y-4 pt-2">
-            {/* Mileage Range */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Quilometragem</Label>
-                <span className="text-sm text-muted-foreground">
-                  {formatMileage(filters.mileageRange[0])} - {formatMileage(filters.mileageRange[1])}
-                </span>
-              </div>
-              <Slider
-                value={filters.mileageRange}
-                onValueChange={(value) => updateFilters({ mileageRange: value as [number, number] })}
-                max={2000000}
-                min={0}
-                step={50000}
-                className="w-full"
-              />
-            </div>
-
-            {/* Transmission */}
-            <div className="space-y-2">
-              <Label>Transmissão</Label>
-              <Select
-                value={filters.transmission === "" ? "all" : filters.transmission}
-                onValueChange={(value) => updateFilters({ transmission: value === "all" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Qualquer transmissão" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Qualquer transmissão</SelectItem>
-                  {transmissions.map((transmission) => (
-                    <SelectItem key={transmission} value={transmission}>
-                      {transmission}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Color */}
-            <div className="space-y-2">
-              <Label>Cor</Label>
-              <Select
-                value={filters.color === "" ? "all" : filters.color}
-                onValueChange={(value) => updateFilters({ color: value === "all" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Qualquer cor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Qualquer cor</SelectItem>
-                  {colors.filter(c => c !== "").map((color) => (
-                    <SelectItem key={color} value={color}>
-                      {color}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {/* Fuel Type */}
-            <div className="space-y-2">
-              <Label>Combustível</Label>
-              <Select
-                value={filters.fuelType === "" ? "all" : filters.fuelType}
-                onValueChange={(value) => updateFilters({ fuelType: value === "all" ? "" : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Qualquer combustível" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Qualquer combustível</SelectItem>
-                  {fuelTypes.filter(f => f !== "").map((fuel) => (
-                    <SelectItem key={fuel} value={fuel}>
-                      {fuel}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             {/* Location */}
             <div className="space-y-2">
-              <Label>Localização</Label>
+              <div className="flex items-center justify-between">
+                <Label>Localização</Label>
+                {filters.location && (
+                  <Button variant="ghost" size="sm" onClick={clearLocationFilter}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
               <Select
                 value={filters.location === "" ? "all" : filters.location}
                 onValueChange={(value) => updateFilters({ location: value === "all" ? "" : value })}
@@ -324,38 +322,89 @@ const AdvancedCarFilters = ({ filters, onFiltersChange }: AdvancedCarFiltersProp
               </Select>
             </div>
 
-            <Separator />
-
-            {/* Optional Features */}
-            {/* <div className="space-y-3">
-              <Label>Opcionais</Label>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="air-conditioning"
-                  checked={filters.hasAirConditioning}
-                  onCheckedChange={(checked) => 
-                    updateFilters({ hasAirConditioning: checked as boolean })
-                  }
-                />
-                <Label htmlFor="air-conditioning" className="text-sm font-normal">
-                  Ar Condicionado
-                </Label>
+            {/* Color */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Cor</Label>
+                {filters.color && (
+                  <Button variant="ghost" size="sm" onClick={() => updateFilters({ color: "" })}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
+              <Select
+                value={filters.color === "" ? "all" : filters.color}
+                onValueChange={(value) => updateFilters({ color: value === "all" ? "" : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Qualquer cor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer cor</SelectItem>
+                  {colors.filter(c => c !== "").map((color) => (
+                    <SelectItem key={color} value={color}>
+                      {color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="power-steering"
-                  checked={filters.hasPowerSteering}
-                  onCheckedChange={(checked) => 
-                    updateFilters({ hasPowerSteering: checked as boolean })
-                  }
-                />
-                <Label htmlFor="power-steering" className="text-sm font-normal">
-                  Direção Hidráulica
-                </Label>
+            {/* Transmission */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Transmissão</Label>
+                {filters.transmission && (
+                  <Button variant="ghost" size="sm" onClick={() => updateFilters({ transmission: "" })}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
-            </div> */}
+              <Select
+                value={filters.transmission === "" ? "all" : filters.transmission}
+                onValueChange={(value) => updateFilters({ transmission: value === "all" ? "" : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Qualquer transmissão" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer transmissão</SelectItem>
+                  {transmissions.map((transmission) => (
+                    <SelectItem key={transmission} value={transmission}>
+                      {transmission}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Fuel Type */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Combustível</Label>
+                {filters.fuelType && (
+                  <Button variant="ghost" size="sm" onClick={() => updateFilters({ fuelType: "" })}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              <Select
+                value={filters.fuelType === "" ? "all" : filters.fuelType}
+                onValueChange={(value) => updateFilters({ fuelType: value === "all" ? "" : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Qualquer combustível" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer combustível</SelectItem>
+                  {fuelTypes.filter(f => f !== "").map((fuel) => (
+                    <SelectItem key={fuel} value={fuel}>
+                      {fuel}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
 

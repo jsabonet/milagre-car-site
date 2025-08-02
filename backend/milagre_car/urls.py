@@ -21,16 +21,25 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from cars.views import CarViewSet
 from categories.views import CategoryViewSet
+from contact_messages.views import ContactMessageViewSet
+from accounts.views import login_view, logout_view, user_profile, check_admin
 
 # Criar router para API REST
 router = DefaultRouter()
 router.register(r'cars', CarViewSet)
 router.register(r'categories', CategoryViewSet)
+router.register(r'contact-messages', ContactMessageViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),
+    
+    # Auth endpoints
+    path('api/auth/login/', login_view, name='login'),
+    path('api/auth/logout/', logout_view, name='logout'),
+    path('api/auth/profile/', user_profile, name='profile'),
+    path('api/auth/check-admin/', check_admin, name='check-admin'),
 ]
 
 # Servir arquivos de mídia em desenvolvimento

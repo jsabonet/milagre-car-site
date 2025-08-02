@@ -1,5 +1,8 @@
 import React, { useState } from "react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
+import { authService } from "@/services/auth";
+import { LogOut, User, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +21,11 @@ import CarImageUpload from "@/components/CarImageUpload";
 import PrimaryImageUpload from "@/components/PrimaryImageUpload";
 import CarImageGallery from "@/components/CarImageGallery";
 import SecondaryImagesUpload from "@/components/SecondaryImagesUpload";
+import MessageManagement from "@/components/MessageManagement";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const Admin = () => {
-  const [activeTab, setActiveTab] = useState<"cars" | "categories">("cars");
+const AdminContent = () => {
+  const [activeTab, setActiveTab] = useState<"cars" | "categories" | "messages">("cars");
   const [isAddingCar, setIsAddingCar] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingCar, setEditingCar] = useState<Car | null>(null);
@@ -29,7 +33,8 @@ const Admin = () => {
   const [selectedCarForImages, setSelectedCarForImages] = useState<number | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
+  const user = authService.getUser();
+  
   // API Hooks
   const { data: cars, loading: carsLoading, error: carsError, refetch: refetchCars } = useCars();
   const { data: categories, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories();
@@ -479,6 +484,11 @@ const Admin = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await authService.logout();
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -497,13 +507,25 @@ const Admin = () => {
                 <p className="text-muted-foreground">MILAGRE CAR & COMÉRCIO</p>
               </div>
             </div>
+            
+            {/* User Menu */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4" />
+                <span>Olá, {user?.first_name || user?.username}</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
         {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-8 max-w-md">
+        <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-8 max-w-lg">
           <button
             onClick={() => setActiveTab("cars")}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -525,6 +547,17 @@ const Admin = () => {
           >
             <Tags className="h-4 w-4" />
             Categorias
+          </button>
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "messages"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageCircle className="h-4 w-4" />
+            Mensagens
           </button>
         </div>
 
@@ -977,9 +1010,21 @@ const Admin = () => {
           </div>
         )}
 
+        {/* Messages Tab */}
+        {activeTab === "messages" && (
+          <MessageManagement />
+        )}
 
       </div>
     </div>
+  );
+};
+
+const Admin = () => {
+  return (
+    <ProtectedRoute>
+      <AdminContent />
+    </ProtectedRoute>
   );
 };
 

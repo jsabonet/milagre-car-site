@@ -130,10 +130,6 @@ const InventoryStats = ({ cars }: InventoryStatsProps) => {
               <div className="p-3 bg-green-500/10 rounded-lg">
                 <DollarSign className="h-6 w-6 text-green-500" />
               </div>
-              <div>
-                <p className="text-lg font-bold">{formatPrice(stats.avgPrice)}</p>
-                <p className="text-sm text-muted-foreground">Preço Médio</p>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -278,14 +274,7 @@ const InventoryStats = ({ cars }: InventoryStatsProps) => {
           <CardTitle>Resumo do Inventário</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary mb-1">
-                {formatPrice(stats.avgPrice)}
-              </div>
-              <p className="text-sm text-muted-foreground">Preço Médio</p>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">            
             <div className="text-center">
               <div className="text-2xl font-bold text-primary mb-1">
                 {Math.round(stats.avgYear)}

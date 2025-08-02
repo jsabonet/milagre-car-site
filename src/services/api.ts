@@ -44,6 +44,45 @@ export interface CarImage {
   created_at?: string;
 }
 
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  subject_display: string;
+  message: string;
+  preferred_contact: string;
+  preferred_contact_display: string;
+  status: string;
+  status_display: string;
+  priority: string;
+  priority_display: string;
+  admin_response: string;
+  responded_at: string;
+  created_at: string;
+  updated_at: string;
+  is_read: boolean;
+  days_since_created: number;
+  urgency_level: number;
+  is_new: boolean;
+  ip_address?: string;
+}
+
+export interface MessageStats {
+  total_messages: number;
+  new_messages: number;
+  in_progress_messages: number;
+  resolved_messages: number;
+  unread_messages: number;
+  urgent_messages: number;
+  today_messages: number;
+  week_messages: number;
+  avg_response_time: number;
+  subject_stats: { [key: string]: number };
+  status_distribution: { [key: string]: number };
+}
+
 export interface CarFilters {
   make?: string;
   model?: string;
@@ -60,6 +99,7 @@ export interface CarFilters {
   category?: number;
   featured?: boolean;
   location?: string;
+  color?: string;
   search?: string;
   ordering?: string;
 }
@@ -71,48 +111,47 @@ export interface ApiResponse<T> {
   results: T[];
 }
 
+import { authService } from './auth';
+
 class ApiService {
+  private baseURL = API_BASE_URL;
+
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${this.baseURL}${endpoint}`;
     
+    // Adicionar token de autenticação se disponível
+    const token = authService.getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Token ${token}`;
+    }
+
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
       ...options,
+      headers,
     };
 
     try {
       const response = await fetch(url, config);
+      
       if (!response.ok) {
-        // Tente ler o corpo da resposta para mostrar o erro detalhado do DRF
-        let errorDetail = '';
-        try {
-          const errorJson = await response.json();
-          errorDetail = JSON.stringify(errorJson);
-        } catch {
-          errorDetail = response.statusText;
+        if (response.status === 401) {
+          // Token inválido, fazer logout
+          authService.logout();
+          window.location.href = '/admin';
+          throw new Error('Sessão expirada');
         }
-        throw new Error(`HTTP error! status: ${response.status} - ${errorDetail}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // Check if response has content (status 204 No Content returns empty body)
-      if (response.status === 204 || response.headers.get('content-length') === '0') {
-        return {} as T;
-      }
-      
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
-      }
-      
-      // For non-JSON responses, return empty object
-      return {} as T;
+      return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -122,16 +161,45 @@ class ApiService {
   // Métodos para Cars
   async getCars(filters?: CarFilters): Promise<ApiResponse<Car>> {
     const params = new URLSearchParams();
+    
     if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
+      if (filters.make) {
+        params.append('brand', filters.make); // Mapeia make para brand
+      }
+      if (filters.location) {
+        params.append('location', filters.location);
+      }
+      if (filters.color) {
+        params.append('color', filters.color);
+      }
+      if (filters.transmission) {
+        params.append('transmission', filters.transmission);
+      }
+      if (filters.fuel) {
+        params.append('fuel', filters.fuel);
+      }
+      if (filters.price_min !== undefined) {
+        params.append('price_min', filters.price_min.toString());
+      }
+      if (filters.price_max !== undefined) {
+        params.append('price_max', filters.price_max.toString());
+      }
+      if (filters.year_min !== undefined) {
+        params.append('year_min', filters.year_min.toString());
+      }
+      if (filters.year_max !== undefined) {
+        params.append('year_max', filters.year_max.toString());
+      }
+      if (filters.category !== undefined) {
+        params.append('category', filters.category.toString());
+      }
     }
-    const queryString = params.toString();
-    const endpoint = queryString ? `/cars/?${queryString}` : '/cars/';
-    return this.makeRequest<ApiResponse<Car>>(endpoint);
+
+    const response = await this.makeRequest<ApiResponse<Car>>(`/cars/?${params.toString()}`);
+    return response;
   }
 
   async getCar(id: number): Promise<Car> {
@@ -247,6 +315,94 @@ class ApiService {
     empty_categories: number;
   }> {
     return this.makeRequest('/categories/stats/');
+  }
+
+  // Métodos para Contact Messages
+  async getContactMessages(filters?: {
+    status?: string;
+    priority?: string;
+    subject?: string;
+    search?: string;
+    is_read?: string;
+  }): Promise<ApiResponse<ContactMessage>> {
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+    }
+    const url = `/contact-messages/${queryParams.toString() ? `?${queryParams}` : ''}`;
+    return this.makeRequest<ApiResponse<ContactMessage>>(url);
+  }
+
+  async getContactMessage(id: number): Promise<ContactMessage> {
+    return this.makeRequest<ContactMessage>(`/contact-messages/${id}/`);
+  }
+
+  async createContactMessage(messageData: {
+    name: string;
+    email: string;
+    phone: string;
+    subject: string;
+    message: string;
+    preferred_contact?: string;
+  }): Promise<ContactMessage> {
+    return this.makeRequest<ContactMessage>('/contact-messages/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Remover autenticação para permitir que qualquer pessoa envie mensagem
+      },
+      body: JSON.stringify(messageData),
+    });
+  }
+
+  async updateContactMessage(id: number, updateData: {
+    status?: string;
+    priority?: string;
+    admin_response?: string;
+    is_read?: boolean;
+  }): Promise<ContactMessage> {
+    return this.makeRequest<ContactMessage>(`/contact-messages/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData),
+    });
+  }
+
+  async markMessageAsRead(id: number): Promise<{ status: string }> {
+    return this.makeRequest<{ status: string }>(`/contact-messages/${id}/mark_read/`, {
+      method: 'POST',
+    });
+  }
+
+  async respondToMessage(id: number, response: string): Promise<ContactMessage> {
+    return this.makeRequest<ContactMessage>(`/contact-messages/${id}/respond/`, {
+      method: 'POST',
+      body: JSON.stringify({ response }),
+    });
+  }
+
+  async getMessageStats(): Promise<MessageStats> {
+    return this.makeRequest<MessageStats>('/contact-messages/stats/');
+  }
+
+  async getRecentMessages(): Promise<ContactMessage[]> {
+    return this.makeRequest<ContactMessage[]>('/contact-messages/recent/');
+  }
+
+  async getUrgentMessages(): Promise<ContactMessage[]> {
+    return this.makeRequest<ContactMessage[]>('/contact-messages/urgent/');
+  }
+
+  async bulkUpdateMessages(messageIds: number[], updateData: {
+    status?: string;
+    priority?: string;
+    is_read?: boolean;
+  }): Promise<{ updated_count: number; message: string }> {
+    return this.makeRequest<{ updated_count: number; message: string }>('/contact-messages/bulk_update/', {
+      method: 'POST',
+      body: JSON.stringify({ ids: messageIds, data: updateData }),
+    });
   }
 }
 

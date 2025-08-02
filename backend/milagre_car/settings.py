@@ -27,10 +27,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_filters',
+    'rest_framework.authtoken',
     
     # Local apps
     'cars.apps.CarsConfig',
     'categories.apps.CategoriesConfig',
+    'accounts.apps.AccountsConfig',
+    'contact_messages.apps.ContactMessagesConfig',
 ]
 
 MIDDLEWARE = [
@@ -98,6 +101,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Configurar modelo de usuário customizado
+# AUTH_USER_MODEL = 'accounts.User'  # Comentar ou remover esta linha
+
 # Internationalization
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'Africa/Maputo'
@@ -126,6 +132,13 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'UNICODE_JSON': True,
 }

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Phone, 
   Mail, 
@@ -23,8 +24,10 @@ import {
   AlertCircle,
   Instagram,
   Facebook,
-  Youtube
+  Youtube,
+  Loader2
 } from "lucide-react";
+import { apiService } from "@/services/api";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -33,10 +36,12 @@ const Contact = () => {
     phone: '',
     subject: '',
     message: '',
-    preferredContact: ''
+    preferred_contact: ''
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const contactInfo = [
     {
@@ -82,13 +87,13 @@ const Contact = () => {
   ];
 
   const subjects = [
-    "Informações sobre veículos",
-    "Agendamento de test drive",
-    "Financiamento e parcelas",
-    "Venda do meu carro",
-    "Suporte pós-venda",
-    "Parcerias comerciais",
-    "Outros assuntos"
+    { value: "info_vehicles", label: "Informações sobre veículos" },
+    { value: "test_drive", label: "Agendamento de test drive" },
+    { value: "financing", label: "Financiamento e parcelas" },
+    { value: "sell_car", label: "Venda do meu carro" },
+    { value: "support", label: "Suporte pós-venda" },
+    { value: "partnership", label: "Parcerias comerciais" },
+    { value: "other", label: "Outros assuntos" }
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -98,20 +103,77 @@ const Contact = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 5000);
+    setIsLoading(true);
+    setError(null);
     
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: '',
-      preferredContact: ''
-    });
+    // Validações locais
+    if (!formData.name.trim()) {
+      setError('Nome é obrigatório.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      setError('E-mail válido é obrigatório.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!formData.phone.trim()) {
+      setError('Telefone é obrigatório.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!formData.subject) {
+      setError('Selecione um assunto.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!formData.message.trim()) {
+      setError('Mensagem é obrigatória.');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const response = await apiService.createContactMessage(formData);
+      
+      if (response) {
+        setIsSubmitted(true);
+        setTimeout(() => setIsSubmitted(false), 8000);
+        
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: '',
+          preferred_contact: ''
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      
+      // Verificar se o erro tem response (axios/fetch error)
+      if (error.message && error.message.includes('429')) {
+        setError('Muitas mensagens enviadas. Tente novamente em 1 hora.');
+      } else if (error.message && error.message.includes('Network')) {
+        setError('Erro de conexão. Verifique sua internet e tente novamente.');
+      } else if (error.message && error.message.includes('HTTP error! status: 400')) {
+        setError('Dados inválidos. Verifique os campos e tente novamente.');
+      } else if (error.message) {
+        setError(error.message);
+      } else {
+        setError('Erro ao enviar mensagem. Tente novamente.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = formData.name && formData.email && formData.subject && formData.message;
@@ -212,6 +274,16 @@ const Contact = () => {
               </p>
             </div>
 
+            {/* Error Alert */}
+            {error && (
+              <Alert className="mb-6 border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {isSubmitted ? (
               <Card className="shadow-xl border-0 bg-green-50 border-green-200">
                 <CardContent className="pt-6">
@@ -228,9 +300,10 @@ const Contact = () => {
                     <div className="bg-white p-4 rounded-lg border border-green-200">
                       <h4 className="font-semibold text-green-800 mb-2">O que acontece agora:</h4>
                       <ul className="text-left text-green-700 space-y-1">
-                        <li>✓ Análise da sua solicitação</li>
-                        <li>✓ Contato por WhatsApp ou telefone</li>
-                        <li>✓ Agendamento personalizado</li>
+                        <li>✓ Sua mensagem foi salva em nosso sistema</li>
+                        <li>✓ Nossa equipe foi notificada</li>
+                        <li>✓ Responderemos via {formData.preferred_contact ? (formData.preferred_contact === 'whatsapp' ? 'WhatsApp' : formData.preferred_contact === 'phone' ? 'telefone' : 'e-mail') : 'seu canal preferido'}</li>
+                        <li>✓ Agendamento personalizado se necessário</li>
                       </ul>
                     </div>
                   </div>
@@ -295,8 +368,8 @@ const Contact = () => {
                             </SelectTrigger>
                             <SelectContent>
                               {subjects.map((subject) => (
-                                <SelectItem key={subject} value={subject}>
-                                  {subject}
+                                <SelectItem key={subject.value} value={subject.value}>
+                                  {subject.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -306,7 +379,7 @@ const Contact = () => {
                         {/* Preferred Contact */}
                         <div className="space-y-2">
                           <Label htmlFor="contact">Preferência de Contato</Label>
-                          <Select value={formData.preferredContact} onValueChange={(value) => handleInputChange('preferredContact', value)}>
+                          <Select value={formData.preferred_contact} onValueChange={(value) => handleInputChange('preferred_contact', value)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Como prefere ser contatado?" />
                             </SelectTrigger>
@@ -336,10 +409,19 @@ const Contact = () => {
                           type="submit" 
                           className="w-full bg-blue-600 hover:bg-blue-700" 
                           size="lg"
-                          disabled={!isFormValid}
+                          disabled={!isFormValid || isLoading}
                         >
-                          <Send className="h-4 w-4 mr-2" />
-                          Enviar Mensagem
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Enviando...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" />
+                              Enviar Mensagem
+                            </>
+                          )}
                         </Button>
                       </form>
                     </CardContent>
@@ -487,7 +569,7 @@ const Contact = () => {
       </section>
 
       {/* Test Drive Booking */}
-      <TestDriveBooking />
+      {/* <TestDriveBooking /> */}
 
       <Footer />
     </div>

@@ -2,6 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiService, Car, Category, CarFilters, ApiResponse } from '../services/api';
 
+// Função de debounce
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export interface UseApiState<T> {
   data: T | null;
   loading: boolean;
@@ -23,10 +40,20 @@ export interface UseApiListState<T> {
 
 // Hook para buscar carros usando React Query
 export function useCars(filters?: CarFilters): UseApiListState<Car> {
+  // Implementar debounce para pesquisa
+  const debouncedSearch = useDebounce(filters?.search, 500);
+  
+  // Criar filtros com pesquisa debounced
+  const debouncedFilters = filters ? {
+    ...filters,
+    search: debouncedSearch
+  } : undefined;
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['cars', filters],
-    queryFn: () => apiService.getCars(filters),
+    queryKey: ['cars', debouncedFilters],
+    queryFn: () => apiService.getCars(debouncedFilters),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !debouncedSearch || debouncedSearch.length >= 2, // Só pesquisa com 2+ caracteres
   });
 
   return {

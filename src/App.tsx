@@ -8,6 +8,7 @@ import Cars from "./pages/Cars";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+import Login from "./pages/Login";
 import CarDetails from "./pages/CarDetails";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,10 @@ const App = () => (
           <Route path="/cars" element={<Cars />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/admin/login" element={<Login />} />
+          <Route path="/admin/auth" element={<Login />} />
+          <Route path="/secure-admin-access" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/car/:id" element={<CarDetails />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

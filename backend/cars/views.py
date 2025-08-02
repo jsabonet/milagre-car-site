@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Avg, Count
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from django.core.exceptions import PermissionDenied
 import logging
 from .models import Car, CarImage
 from .serializers import CarListSerializer, CarDetailSerializer, CarCreateSerializer, CarImageSerializer
@@ -15,7 +17,7 @@ class CarViewSet(viewsets.ModelViewSet):
     queryset = Car.objects.select_related('category').prefetch_related('images')
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = CarFilter
-    search_fields = ['make', 'model', 'description', 'features']
+    search_fields = ['brand', 'name', 'description', 'location']  # <-- Corrigido para usar 'brand' e 'name'
     ordering_fields = ['price', 'year', 'mileage', 'created_at']
     ordering = ['-created_at']
     parser_classes = [MultiPartParser, FormParser, JSONParser]
@@ -290,4 +292,31 @@ class CarViewSet(viewsets.ModelViewSet):
                 {'error': 'Imagem não encontrada'},
                 status=status.HTTP_404_NOT_FOUND
             )
+    
+    def get_permissions(self):
+        """Permissões baseadas na ação"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'toggle_featured', 'add_images', 'remove_image', 'set_primary_image']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAuthenticatedOrReadOnly]
+        
+        return [permission() for permission in permission_classes]
+    
+    def perform_create(self, serializer):
+        """Verificar se usuário é admin ao criar"""
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            raise PermissionDenied("Apenas administradores podem criar carros")
+        serializer.save()
+    
+    def perform_update(self, serializer):
+        """Verificar se usuário é admin ao atualizar"""
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            raise PermissionDenied("Apenas administradores podem editar carros")
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        """Verificar se usuário é admin ao deletar"""
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            raise PermissionDenied("Apenas administradores podem deletar carros")
+        instance.delete()
 

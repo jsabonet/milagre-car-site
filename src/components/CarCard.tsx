@@ -5,6 +5,7 @@ import { Calendar, Fuel, Gauge, MapPin, Settings, ChevronLeft, ChevronRight, Ima
 import { formatPrice, formatNumber } from "@/lib/mozambique-utils";
 import { Car } from "@/services/api";
 import { useState } from "react";
+import { AdminOnly } from '@/components/AdminOnly';
 
 interface CarCardProps {
   car: Car;
@@ -174,13 +175,27 @@ const CarCard = ({ car, onViewDetails, viewMode = 'grid' }: CarCardProps) => {
                 *Parcelamento disponível
               </p>
             </div>
-            <Button 
-              variant="premium" 
-              size="sm"
-              onClick={() => onViewDetails(car)}
-            >
-              Ver Detalhes
-            </Button>
+            
+            <div className="flex gap-2">
+              <Button 
+                variant="premium" 
+                size="sm"
+                onClick={() => onViewDetails(car)}
+              >
+                Ver Detalhes
+              </Button>
+              
+              {/* Botão de edição apenas para admins */}
+              <AdminOnly>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.open(`/admin/cars/${car.id}/edit`, '_blank')}
+                >
+                  Editar
+                </Button>
+              </AdminOnly>
+            </div>
           </div>
         </div>
       </CardContent>

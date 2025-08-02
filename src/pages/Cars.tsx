@@ -4,7 +4,6 @@ import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import CarCard from "@/components/CarCard";
 import AdvancedCarFilters from "@/components/AdvancedCarFilters";
-import CarComparison from "@/components/CarComparison";
 import InventoryStats from "@/components/InventoryStats";
 import { Car } from "@/services/api";
 import { useCars } from "@/hooks/useApi"; // <-- use API hook
@@ -26,7 +25,6 @@ import {
   Palette, 
   Settings2,
   Filter,
-  GitCompare,
   Map,
   TrendingUp,
   Play,
@@ -77,7 +75,6 @@ const Cars = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [selectedCars, setSelectedCars] = useState<string[]>([]);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -93,7 +90,9 @@ const Cars = () => {
     year_min: filters.yearRange[0],
     year_max: filters.yearRange[1],
     make: filters.brand && filters.brand !== "Todos" ? filters.brand : undefined,
-    // Add more filters as needed
+    location: filters.location || undefined,
+    transmission: filters.transmission || undefined,
+    fuel: filters.fuelType || undefined,
   });
 
   // DEBUG: Log the raw carsData to investigate missing vehicles
@@ -227,14 +226,6 @@ const Cars = () => {
     setShowDialog(true);
   };
 
-  const handleSelectCar = (carId: string) => {
-    setSelectedCars(prev => 
-      prev.includes(carId) 
-        ? prev.filter(id => id !== carId)
-        : [...prev, carId].slice(-4) // Máximo 4 carros
-    );
-  };
-
   const nextImage = () => {
     if (selectedCar && selectedCar.images) {
       setCurrentImageIndex(prev => 
@@ -329,10 +320,10 @@ const Cars = () => {
     setFilters({
       search: "",
       category: "Todos",
-      priceRange: [0, 500000],
-      yearRange: [1975, 2025], // <-- Corrigido aqui também
+      priceRange: [0, 50000000],
+      yearRange: [1975, 2025],
       brand: "",
-      mileageRange: [0, 200000],
+      mileageRange: [0, 200000000],
       transmission: "",
       color: "",
       fuelType: "",
@@ -528,15 +519,15 @@ const Cars = () => {
                           viewMode={viewMode}
                         />
                         
-                        {/* Comparison Checkbox */}
-                        <div className="absolute top-3 right-3">
+                        {/* Remover Comparison Checkbox */}
+                        {/* <div className="absolute top-3 right-3">
                           <input
                             type="checkbox"
                             checked={selectedCars.includes(String(car.id))}
                             onChange={() => handleSelectCar(String(car.id))}
                             className="w-4 h-4 text-primary bg-white border-gray-300 rounded focus:ring-primary focus:ring-2"
                           />
-                        </div>
+                        </div> */}
                       </div>
                     ))}
                   </div>
@@ -593,8 +584,8 @@ const Cars = () => {
         </div>
       </section>
 
-      {/* Comparison Bar */}
-      {selectedCars.length > 0 && (
+      {/* Remover Comparison Bar */}
+      {/* {selectedCars.length > 0 && (
         <CarComparison
           selectedCarIds={selectedCars}
           cars={cars.map(car => ({
@@ -618,7 +609,7 @@ const Cars = () => {
           onRemoveCar={handleSelectCar}
           onClearAll={() => setSelectedCars([])}
         />
-      )}
+      )} */}
 
       {/* Car Details Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

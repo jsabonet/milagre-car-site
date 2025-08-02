@@ -17,11 +17,12 @@ class CarFilter(django_filters.FilterSet):
     category = django_filters.NumberFilter(field_name='category__id')
     featured = django_filters.BooleanFilter()
     location = django_filters.CharFilter(lookup_expr='icontains')
+    color = django_filters.CharFilter(lookup_expr='icontains')
     
     class Meta:
         model = Car
         fields = [
             'make', 'model', 'brand', 'name', 'year_min', 'year_max', 
             'price_min', 'price_max', 'mileage_max', 'fuel_type', 'fuel',
-            'transmission', 'category', 'featured', 'location'
+            'transmission', 'category', 'featured', 'location', 'color'
         ]
